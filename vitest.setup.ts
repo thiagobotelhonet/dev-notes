@@ -30,6 +30,8 @@ const emptyRect = new DOMRect()
 Range.prototype.getClientRects ??= () =>
   Object.assign([] as DOMRect[], { item: () => null }) as unknown as DOMRectList
 Range.prototype.getBoundingClientRect ??= () => emptyRect
+/* Base UI's ScrollArea waits for animations before measuring. */
+Element.prototype.getAnimations ??= () => []
 
 /* No layout in jsdom: the resize handle would swallow every click at (0, 0). */
 vi.mock("react-resizable-panels", () => {

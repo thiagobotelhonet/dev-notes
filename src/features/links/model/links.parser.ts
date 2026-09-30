@@ -17,7 +17,7 @@ const linkPattern = /(!?)\[\[([^[\]\n|#]*)(#[^[\]\n|]*)?(?:\|([^[\]\n]*))?\]\]/g
 const fencePattern = /^ {0,3}(`{3,}|~{3,})/
 
 /** Ranges of fenced blocks and inline code spans, where links do not count. */
-function codeRanges(text: string) {
+export function codeRanges(text: string) {
   const ranges: { start: number; end: number }[] = []
   let offset = 0
   let fence: { marker: string; start: number } | null = null

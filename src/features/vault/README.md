@@ -94,6 +94,24 @@ Link pendente (RN-LINK-001, FR-007, FR-009):
 - Renomear e mover pelo app não mexem no registro: os links são reescritos.
 - Falha ao gravar o registro não interrompe nada nem mostra aviso.
 
+## Transformar menção em link (spec 003)
+
+`linkMention({ path, start, end, text }, alvo)` troca uma menção da nota
+`path` por um link para `alvo` (RN-BACK-004) e devolve:
+
+| Resultado | Quando | O que acontece |
+|---|---|---|
+| `linked` | o arquivo é o texto indexado e o trecho ainda é a menção | grava só o intervalo, com `mentionLink` (pasta quando o nome é repetido); atualiza índice e data e emite `rewritten` |
+| `changed` | o arquivo mudou fora do app, ou o trecho não é mais a menção | não grava; o índice passa a ter o que foi lido e `entries` muda, para o painel recalcular |
+| `failed` | leitura ou gravação falhou, ou o índice não está pronto | nada muda |
+
+- Antes, `onBeforeMutate([path])`: a edição pendente da nota que menciona é
+  gravada primeiro.
+- As posições são do texto cru; BOM e quebras de linha ficam como estavam.
+- Grava por `storage.writeText`, que registra no ledger: o observador não
+  trata a gravação como alteração externa.
+- Os avisos ao usuário são do painel de backlinks, não da store.
+
 ## Exclusão (FR-024)
 
 Excluir chama `Trash` de `shared/vault`. Lixeira indisponível bloqueia a

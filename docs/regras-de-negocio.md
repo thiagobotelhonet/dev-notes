@@ -634,16 +634,88 @@ DADO que a nota `deploy` e a nota `infra` (que cita "deploy" no texto) existem
 QUANDO o usuário busca `deploy`
 ENTÃO `deploy` aparece antes de `infra`
 
+**CA-BACK-001-01 — Painel de backlinks** (Positivo · RN-BACK-001 · spec 003)
+DADO que `infra` e `runbook` contêm `[[deploy]]`
+QUANDO o usuário abre `deploy`
+ENTÃO o painel mostra `infra` e `runbook`, cada uma com a pasta e o trecho onde o link aparece
+
+**CA-BACK-001-02 — Abrir no ponto do link** (Positivo · RN-BACK-001 · spec 003)
+DADO que `infra` aparece no painel de `deploy`
+QUANDO o usuário escolhe `infra` no painel
+ENTÃO `infra` abre com o cursor no link para `deploy`
+
+**CA-BACK-001-03 — Link com pasta e nome repetido** (Alternativo · RN-BACK-001, RN-LINK-004 · spec 003)
+DADO que existem `backend/api` e `frontend/api`, e `infra` contém `[[backend/api]]` e `[[api]]`
+QUANDO o usuário abre `backend/api`
+ENTÃO `infra` aparece no painel pelo link `[[backend/api]]`
+E o link ambíguo `[[api]]` não conta para nenhuma das duas
+
+**CA-BACK-001-04 — Várias ocorrências na mesma nota** (Positivo · RN-BACK-001 · spec 003)
+DADO que `infra` tem três links para `deploy`
+QUANDO o usuário abre `deploy`
+ENTÃO `infra` aparece uma vez no painel, com a quantidade de links e o trecho de cada um
+
+**CA-BACK-001-05 — Painel acompanha mudanças** (Positivo · RN-BACK-001 · spec 003)
+DADO que `deploy` está aberta
+QUANDO outra nota ganha ou perde um link para `deploy` (pelo app ou por outra ferramenta)
+ENTÃO o painel se atualiza sem o usuário reabrir `deploy`
+
+**CA-BACK-001-06 — Nenhum backlink** (Alternativo · RN-BACK-001 · spec 003)
+DADO que nenhuma nota aponta para `rascunho`
+QUANDO o usuário abre `rascunho`
+ENTÃO o painel diz que nenhuma nota aponta para ela
+
 **CA-BACK-002-01 — Menção sem link** (Positivo · RN-BACK-002, 004)
 DADO que `infra` cita "deploy" no texto sem link
 QUANDO o usuário abre a nota `deploy`
 ENTÃO `infra` aparece na seção recolhida de menções sem link
 E o usuário pode transformar a menção em link
 
+**CA-BACK-002-02 — Seção recolhida por padrão** (Positivo · RN-BACK-002 · spec 003)
+DADO que há menções sem link para `deploy`
+QUANDO o usuário abre `deploy`
+ENTÃO a seção de menções aparece recolhida, com a quantidade de notas visível
+E abre com uma ação do usuário
+
 **CA-BACK-003-01 — Palavra parcial não conta** (Negativo · RN-BACK-003)
 DADO que existe a nota `api` e outra nota contém só a palavra "rapidamente"
 QUANDO o usuário abre a nota `api`
 ENTÃO a outra nota não aparece como menção
+
+**CA-BACK-003-02 — Maiúsculas não contam** (Positivo · RN-BACK-003 · spec 003)
+DADO que `infra` cita "Deploy" sem link
+QUANDO o usuário abre `deploy`
+ENTÃO `infra` aparece como menção
+
+**CA-BACK-003-03 — Link e código não são menção** (Negativo · RN-BACK-003 · spec 003)
+DADO que `infra` tem `[[deploy]]`, um bloco de código com "deploy" e nenhuma outra citação
+QUANDO o usuário abre `deploy`
+ENTÃO `infra` aparece só nos links, não nas menções
+
+**CA-BACK-003-04 — Nome com várias palavras** (Positivo · RN-BACK-003 · spec 003)
+DADO que existe a nota `ideia nova` e `infra` cita "a ideia nova do time"
+QUANDO o usuário abre `ideia nova`
+ENTÃO `infra` aparece como menção
+
+**CA-BACK-004-01 — Texto preservado** (Positivo · RN-BACK-004 · spec 003)
+DADO que `infra` cita "Deploy" (com maiúscula) sem link
+QUANDO o usuário linka a menção
+ENTÃO o texto passa a ser `[[Deploy]]` e o resto do arquivo fica igual byte a byte
+
+**CA-BACK-004-02 — Nome repetido inclui a pasta** (Alternativo · RN-BACK-004, RN-LINK-004 · spec 003)
+DADO que existem `backend/api` e `frontend/api`, e `infra` cita "api" sem link
+QUANDO o usuário abre `backend/api` e linka a menção
+ENTÃO o texto passa a ser `[[backend/api|api]]`
+
+**CA-BACK-004-03 — Nota alterada por fora** (Exceção · RN-BACK-004 · spec 003)
+DADO que a menção aparece no painel
+QUANDO `infra` é alterada por outra ferramenta e o trecho some antes de o usuário linkar
+ENTÃO nada é gravado, o app avisa que a nota mudou e o painel é atualizado
+
+**CA-BACK-004-04 — Uma menção por vez** (Positivo · RN-BACK-004 · spec 003)
+DADO que `infra` cita "deploy" duas vezes
+QUANDO o usuário linka uma das menções
+ENTÃO só aquela vira link e a outra continua na lista
 
 ---
 
@@ -669,7 +741,7 @@ ENTÃO a outra nota não aparece como menção
 | OBJ-PROD-001 | DEC-PROD-006, 020, 021 | RN-EMBED-*, RN-TAG-*, RN-PROP-*, RN-DIARIO-*, RN-HIST-* | — | CA-EMBED-001-01/02/03, CA-EMBED-002-01, CA-EMBED-003-01, CA-DIARIO-002-01, CA-HIST-003-01, CA-TAG-002-01/02, CA-PROP-003-01 |
 | OBJ-PROD-001 | DEC-PROD-005 | RN-CANVAS-* | — | CA-CANVAS-001-01, CA-CANVAS-002-01 |
 | OBJ-PROD-001 | DEC-PROD-015 | RN-BUSCA-* | — | CA-BUSCA-002-01, CA-BUSCA-003-01, CA-BUSCA-004-01 |
-| OBJ-PROD-001 | DEC-PROD-016 | RN-BACK-* | — | CA-BACK-002-01, CA-BACK-003-01 |
+| OBJ-PROD-001 | DEC-PROD-016 | RN-BACK-* | — | CA-BACK-001-01 a 06, CA-BACK-002-01/02, CA-BACK-003-01 a 04, CA-BACK-004-01 a 04 |
 | OBJ-PROD-002 | DEC-PROD-017 | RN-UI-* | — | — |
 | OBJ-PROD-002 | DEC-PROD-009 | RN-SNIPPET-* | — | CA-SNIPPET-002-01 |
 | OBJ-PROD-001 | DEC-PROD-018 | RN-TEMPLATE-001, 003 | — | — |

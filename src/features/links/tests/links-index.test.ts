@@ -101,3 +101,22 @@ describe("createLinkIndex", () => {
     ).toEqual(["infra.md", "servicos/api.md"])
   })
 })
+
+describe("textOf", () => {
+  it("devolve o texto do último update e some com remove", () => {
+    const index = createLinkIndex(vault)
+    expect(index.textOf("deploy.md")).toBe("# deploy")
+    expect(index.textOf("nao-existe.md")).toBeUndefined()
+    index.update("deploy.md", "# deploy\n\nnovo")
+    expect(index.textOf("deploy.md")).toBe("# deploy\n\nnovo")
+    index.remove("deploy.md")
+    expect(index.textOf("deploy.md")).toBeUndefined()
+  })
+
+  it("rename leva o texto para o caminho novo", () => {
+    const index = createLinkIndex(vault)
+    index.rename("backend/api.md", "servicos/api.md")
+    expect(index.textOf("backend/api.md")).toBeUndefined()
+    expect(index.textOf("servicos/api.md")).toBe("[[deploy]]")
+  })
+})

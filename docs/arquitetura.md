@@ -96,7 +96,7 @@ dev-notes/
 │   │   ├── vault/                  # explorador, excluir, renomear, mover
 │   │   ├── editor/                 # CodeMirror + extensões
 │   │   ├── links/                  # links, links pendentes/quebrados, incorporação
-│   │   ├── backlinks/
+│   │   ├── backlinks/              # painel de backlinks e menções sem link
 │   │   ├── canvas/
 │   │   ├── search/                 # busca rápida e completa
 │   │   ├── command-palette/
@@ -178,10 +178,10 @@ Peças que montam telas inteiras levam o prefixo `app-` (CMP-04). Toda tela nova
 
 | Composição | Monta | Usada por |
 | --- | --- | --- |
-| `app-shell` | `Sidebar` esquerda + área central + `Sidebar` direita, dentro de `Resizable` | Toda a aplicação |
+| `app-shell` | `Sidebar` esquerda + área central + painel direito (`aside`, opcional), dentro de `Resizable` | Toda a aplicação; o lado direito recebe o painel de backlinks |
 | `app-tabs` | Abas de nota com fechar, indicador de alteração pendente e menu | workspace, editor, canvas |
-| `app-panel` | Cabeçalho (título + ações) + `Scroll Area` + `Empty` | backlinks, histórico, propriedades, snippets, tags |
-| `app-note-list` | Lista de notas com `Item`, trecho, ícone e ação | busca, backlinks, histórico, snippets |
+| `app-panel` | Cabeçalho (título + ações) + `Scroll Area`; o vazio fica com quem usa (`app-empty`) | backlinks (desde a spec 003), histórico, propriedades, snippets, tags |
+| `app-note-list` | Lista de notas com `Item`: ícone, nome, pasta e trechos clicáveis, cada um com ação opcional | backlinks (desde a spec 003), busca, histórico, snippets |
 | `app-confirm` | `Alert Dialog` padrão de confirmação; `tone="default"` quando nada é destruído | excluir nota/pasta, restaurar versão, recriar nota excluída |
 | `app-choice-dialog` | `Alert Dialog` com duas opções nomeadas | conflito de edição externa |
 | `app-command` | `Command` em `Dialog`, com grupos e atalhos `Kbd` | paleta de comandos, busca rápida |
@@ -291,7 +291,7 @@ apagar a pasta não perde nenhuma nota (ADR-009).
 | --- | --- |
 | RN-NOTA-001..012 | `vault` (+ `links` para atualização de links) |
 | RN-LINK-*, RN-EMBED-* | `links` (regra pura: estado, sugestões, seções, incorporação); `vault` segue o link e cria a nota pendente (`followLink`); `editor` destaca, sugere e mostra os blocos |
-| RN-BACK-* | `backlinks` |
+| RN-BACK-* | `backlinks` (painel, agrupamento e trechos); `links` (regra da menção: `findMentions`, `mentionLink`, texto no índice); `vault` grava a menção como link (`linkMention`); `editor` abre no ponto (`open` com `offset`) |
 | RN-CANVAS-* | `canvas` |
 | RN-BUSCA-* | `search` |
 | RN-UI-* | `command-palette`, `workspace` |

@@ -33,6 +33,11 @@
   "linter": {
     "rules": {
       "preset": "recommended",
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "noUnusedFunctionParameters": "error"
+      },
       "style": {
         "noRestrictedImports": {
           "level": "error",

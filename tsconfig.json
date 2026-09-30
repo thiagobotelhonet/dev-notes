@@ -18,8 +18,7 @@
     /* Linting */
     "skipLibCheck": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    /* Unused code is Biome's job (noUnused*), which skips the generated ui/ folder (CMP-01). */
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   }

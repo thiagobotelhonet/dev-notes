@@ -69,7 +69,7 @@ describe("alteração feita fora do app", () => {
     await expect.poll(() => memory.files()["deploy.md"]).toBe("minha edição")
     await expect.poll(() => note().status).toBe("clean")
     await memory.flushEvents()
-    expect(screen.queryByRole("alertdialog")).toBeNull()
+    await expect.poll(() => screen.queryByRole("alertdialog")).toBeNull()
   })
 
   it("[novo] US4-3 — Usar versão do arquivo descarta o que estava no app", async () => {

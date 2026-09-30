@@ -27,6 +27,7 @@ export function createLinkIndex(files: Record<VaultPath, string>) {
   const notes = new Set<VaultPath>()
   const occurrences = new Map<VaultPath, LinkOccurrence[]>()
   const canvasRefs = new Map<VaultPath, VaultPath[]>()
+  const texts = new Map<VaultPath, string>()
 
   const byName = () => {
     const map = new Map<string, VaultPath[]>()
@@ -85,20 +86,27 @@ export function createLinkIndex(files: Record<VaultPath, string>) {
     notePaths(): VaultPath[] {
       return [...notes]
     },
+    /** Raw text of the last update, so mentions need no disk read (spec 003, research R2). */
+    textOf(path: VaultPath): string | undefined {
+      return texts.get(path)
+    },
     /** Adds or refreshes a note or canvas after it was read or written. */
     update(path: VaultPath, text: string) {
       const kind = kindOf(path)
       if (kind === "note") {
         addNote(path)
         occurrences.set(path, parseLinks(path, text))
+        texts.set(path, text)
       } else if (kind === "canvas") {
         canvasRefs.set(path, canvasFileRefs(text) ?? [])
+        texts.set(path, text)
       }
     },
     remove(path: VaultPath) {
       dropNote(path)
       occurrences.delete(path)
       canvasRefs.delete(path)
+      texts.delete(path)
     },
     /** Moves a note or canvas without re-reading it. */
     rename(from: VaultPath, to: VaultPath) {
@@ -118,6 +126,11 @@ export function createLinkIndex(files: Record<VaultPath, string>) {
       if (refs) {
         canvasRefs.delete(from)
         canvasRefs.set(to, refs)
+      }
+      const text = texts.get(from)
+      if (text !== undefined) {
+        texts.delete(from)
+        texts.set(to, text)
       }
     },
   }

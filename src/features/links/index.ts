@@ -8,6 +8,12 @@ export {
 } from "./model/links.deleted"
 export { type EmbedState, embedState } from "./model/links.embeds"
 export { createLinkIndex, type LinkIndex } from "./model/links.index"
+export {
+  findMentions,
+  type Mention,
+  mentionLink,
+  mentionsSearched,
+} from "./model/links.mentions"
 export { type LinkOccurrence, parseLinks } from "./model/links.parser"
 export {
   affectedByMoves,

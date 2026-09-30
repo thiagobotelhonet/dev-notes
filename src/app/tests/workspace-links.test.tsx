@@ -183,7 +183,7 @@ describe("link ambíguo", () => {
     expect(note().path).toBe("infra.md")
     await user.click(options[1])
     await expect.poll(() => note().path).toBe("frontend/util.md")
-    expect(screen.queryByRole("dialog")).toBeNull()
+    await expect.poll(() => screen.queryByRole("dialog")).toBeNull()
   })
 
   it("Esc fecha a escolha sem abrir nada", async () => {

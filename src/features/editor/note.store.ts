@@ -9,12 +9,20 @@ import {
 } from "@/features/vault"
 import { sha256Hex } from "@/shared/lib/hash"
 import { isVaultError, type OpenVault, type VaultPath } from "@/shared/vault"
-import { decodeNote, encodeNote, type LineEnding } from "./model/note.content"
+import {
+  decodeNote,
+  editorOffset,
+  encodeNote,
+  type LineEnding,
+} from "./model/note.content"
 import {
   type NoteEvent,
   type NoteStatus,
   transition,
 } from "./model/note.machine"
+
+type RevealRequest = { heading: string } | { offset: number }
+type RevealOptions = { heading?: string; offset?: number }
 
 interface NoteState {
   path: VaultPath | null
@@ -29,9 +37,9 @@ interface NoteState {
   externalRaw: string | null
   /** Bumps when the buffer is replaced from disk, never on user edits. */
   revision: number
-  /** Heading to place the cursor on once the note is shown (research R8). */
-  headingRequest: { title: string } | null
-  open(path: VaultPath, options?: { heading?: string }): Promise<void>
+  /** Where to place the cursor once the note is shown: a heading (spec 002) or a text position (spec 003). */
+  revealRequest: RevealRequest | null
+  open(path: VaultPath, options?: RevealOptions): Promise<void>
   edit(text: string): void
   flush(): Promise<void>
   close(): void
@@ -170,23 +178,29 @@ export const useNoteStore = create<NoteState>()((set, get) => {
   return {
     ...emptyNote,
     revision: 0,
-    headingRequest: null,
+    revealRequest: null,
 
     async open(path, options) {
-      const headingRequest = options?.heading
-        ? { title: options.heading }
-        : null
+      /* A new object each time, so asking for the same place twice still moves the cursor. */
+      const revealRequest = (raw: string): RevealRequest | null =>
+        options?.offset !== undefined
+          ? { offset: editorOffset(raw, options.offset) }
+          : options?.heading
+            ? { heading: options.heading }
+            : null
       if (get().path === path) {
-        if (headingRequest) set({ headingRequest })
+        const { buffer, lineEnding, bom } = get()
+        const request = revealRequest(encodeNote(buffer, lineEnding, bom))
+        if (request) set({ revealRequest: request })
         return
       }
       await get().flush()
       clearTimeout(saveTimer)
       registerCloseHook()
       const raw = await currentVault().storage.readText(path)
-      set({ ...emptyNote, path, headingRequest: null })
+      set({ ...emptyNote, path, revealRequest: null })
       await load(raw)
-      set({ headingRequest })
+      set({ revealRequest: revealRequest(raw) })
     },
 
     edit(text) {
@@ -209,7 +223,7 @@ export const useNoteStore = create<NoteState>()((set, get) => {
 
     close() {
       clearTimeout(saveTimer)
-      set({ ...emptyNote, headingRequest: null })
+      set({ ...emptyNote, revealRequest: null })
     },
 
     async keepMine() {

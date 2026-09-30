@@ -2,7 +2,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
 import { markdown } from "@codemirror/lang-markdown"
 import { EditorState } from "@codemirror/state"
 import { EditorView, keymap } from "@codemirror/view"
-import { useEffect, useRef } from "react"
+import { type ReactNode, useEffect, useRef } from "react"
 import { findSection } from "@/features/links"
 import { useVaultStore } from "@/features/vault"
 import { AppEditorFrame } from "@/shared/components/app-editor-frame"
@@ -23,8 +23,11 @@ import { NoteConflictDialog } from "./note-conflict-dialog"
 
 export function NoteEditor({
   onFollowLink,
+  actions,
 }: {
   onFollowLink?: FollowLinkHandler
+  /** Buttons at the right of the header, like the backlinks toggle. */
+  actions?: ReactNode
 }) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
@@ -33,7 +36,7 @@ export function NoteEditor({
   followLink.current = onFollowLink
   const path = useNoteStore((state) => state.path)
   const revision = useNoteStore((state) => state.revision)
-  const headingRequest = useNoteStore((state) => state.headingRequest)
+  const revealRequest = useNoteStore((state) => state.revealRequest)
   const pending = useNoteStore((state) => hasPendingEdit(state))
 
   useEffect(() => {
@@ -99,24 +102,31 @@ export function NoteEditor({
     applyingFromStore.current = false
   }, [revision])
 
-  /* A link to a section opens with the cursor on its heading (research R8). */
+  /* A link to a section (spec 002) or a backlink (spec 003) opens with the cursor on it. */
   useEffect(() => {
     const editor = view.current
-    if (!editor || !headingRequest) return
-    const section = findSection(
-      editor.state.doc.toString(),
-      headingRequest.title
-    )
-    const anchor = section?.from ?? 0
+    if (!editor || !revealRequest) return
+    const length = editor.state.doc.length
+    const anchor =
+      "offset" in revealRequest
+        ? Math.min(revealRequest.offset, length)
+        : (findSection(editor.state.doc.toString(), revealRequest.heading)
+            ?.from ?? 0)
     editor.dispatch({
       selection: { anchor },
-      effects: EditorView.scrollIntoView(anchor, { y: "start" }),
+      effects: EditorView.scrollIntoView(anchor, {
+        y: "offset" in revealRequest ? "center" : "start",
+      }),
     })
-    useNoteStore.setState({ headingRequest: null })
-  }, [headingRequest])
+    useNoteStore.setState({ revealRequest: null })
+  }, [revealRequest])
 
   return (
-    <AppEditorFrame title={path ? basenameOf(path) : ""} pending={pending}>
+    <AppEditorFrame
+      title={path ? basenameOf(path) : ""}
+      pending={pending}
+      actions={actions}
+    >
       <div ref={host} className="h-full" />
       <NoteConflictDialog />
     </AppEditorFrame>

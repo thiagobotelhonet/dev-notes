@@ -10,7 +10,7 @@ editor nem o CodeMirror.
 
 | Export | Para quê |
 |---|---|
-| `createLinkIndex(files)` | índice em memória de links e cartões de canvas, montado a partir do conteúdo das notas e dos `.canvas` |
+| `createLinkIndex(files)` | índice em memória de links e cartões de canvas, montado a partir do conteúdo das notas e dos `.canvas`; guarda o texto de cada arquivo (`textOf`) para as menções |
 | `LinkIndex` | tipo do índice |
 | `affectedByMoves` | arquivos que uma renomeação ou movimentação reescreve (o editor grava antes) |
 | `planChange`, `ChangePlan`, `EntryMove`, `fileMoves` | plano completo de uma renomeação ou movimentação, calculado antes de gravar (FR-019) |
@@ -19,6 +19,7 @@ editor nem o CodeMirror.
 | `findSection`, `Section` | trecho de uma nota sob um título (`[[nota#Seção]]`) |
 | `suggestLinks` | sugestões do autocomplete, já ordenadas e com o texto a inserir |
 | `embedState`, `EmbedState` | o que um bloco de incorporação mostra |
+| `findMentions`, `Mention`, `mentionLink`, `mentionsSearched` | menções sem link de uma nota, o texto do link que substitui uma menção e se o nome é procurado (spec 003) |
 | `LinkChoiceDialog` | diálogo "Qual nota abrir?" do link ambíguo (`Dialog` + `Command`, no padrão do "Mover para…") |
 | `parseDeletedNotes`, `serializeDeletedNotes`, `withDeleted`, `withoutExisting`, `DeletedNotes` | registro de notas excluídas (`.devnotes/deleted-notes.json`, ADR-009) |
 
@@ -97,6 +98,16 @@ No mesmo grupo, a editada mais recentemente vem antes (`modifiedAt`). A
 comparação ignora maiúsculas e acentos (`configuracao` acha `configuração`).
 O texto inserido é só o nome quando ele é único entre as notas e
 `pasta/nome` quando é repetido, para nenhum link sair ambíguo (SC-002).
+
+## Menções sem link (RN-BACK-003, spec 003)
+
+`findMentions(texto, nome)` devolve onde o nome aparece como palavra inteira,
+sem diferenciar maiúsculas, com os mesmos acentos, fora de código e de
+`[[...]]`; nome com menos de 3 caracteres não gera menção (`mentionsSearched`
+diz se o nome é procurado). As posições são do
+texto cru (com BOM e quebras originais). `mentionLink` monta o link que
+substitui a menção: `[[texto]]` se o nome é único, `[[pasta/nome|texto]]` se é
+repetido (RN-LINK-004), sempre preservando o texto lido.
 
 ## Registro de notas excluídas (FR-003, ADR-009)
 

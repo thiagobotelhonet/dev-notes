@@ -8,6 +8,8 @@ import {
   fileMoves,
   type LinkIndex,
   type LinkOccurrence,
+  type Mention,
+  mentionLink,
   parseDeletedNotes,
   planChange,
   resolveLinkTarget,
@@ -70,6 +72,8 @@ export type FollowOutcome =
 
 export type FollowRequest = Pick<LinkOccurrence, "target" | "subpath">
 
+export type MentionLinkResult = "linked" | "changed" | "failed"
+
 interface VaultState {
   status: VaultStatus
   ref: VaultRef | null
@@ -95,6 +99,11 @@ interface VaultState {
   followLink(link: FollowRequest, from: VaultPath): Promise<FollowOutcome>
   /** Recreates a deleted note, empty, at its path; never overwrites. */
   recreateNote(path: VaultPath): Promise<FollowOutcome>
+  /** Turns one mention into a link to `target`; never writes over unknown content (RN-BACK-004). */
+  linkMention(
+    mention: Mention & { path: VaultPath },
+    target: VaultPath
+  ): Promise<MentionLinkResult>
 }
 
 const beforeMutateListeners = new Set<(paths: VaultPath[]) => Promise<void>>()
@@ -249,10 +258,12 @@ export const useVaultStore = create<VaultState>()((set, get) => {
       if (get().vault !== vault) return
       for (const file of files) linkIndex.update(file.path, file.content)
     }
-    const modified = changes
-      .filter((change) => change.kind === "modified")
-      .map((change) => change.path)
-    if (modified.length) set({ entries: withTouched(get().entries, modified) })
+    /* Entries follow the event now, after the index: views and the deleted registry read them before the refresh. */
+    let next = get().entries
+    for (const change of changes)
+      if (change.kind === "removed") next = withoutTree(next, change.path)
+    for (const path of readable) next = withEntry(next, entryFor(path))
+    if (changes.length) set({ entries: withTouched(next, readable) })
     for (const change of changes) emitEntryEvent({ kind: "external", change })
   }
 
@@ -550,6 +561,41 @@ export const useVaultStore = create<VaultState>()((set, get) => {
     async recreateNote(path) {
       await ensureNote(path)
       return { type: "open", path }
+    },
+
+    async linkMention({ path, start, end, text }, target) {
+      const { vault } = get()
+      const index = await indexReady
+      if (!vault || !index) return "failed"
+      await runBeforeMutate([path])
+      let current: string
+      try {
+        current = await guard(() => vault.storage.readText(path))
+      } catch {
+        return "failed"
+      }
+      if (get().vault !== vault) return "failed"
+      /* Research R5: the whole file must be the indexed text, and the range still the mention. */
+      if (
+        current !== index.textOf(path) ||
+        current.slice(start, end) !== text
+      ) {
+        index.update(path, current)
+        set({ entries: withTouched(get().entries, [path]) })
+        return "changed"
+      }
+      const link = mentionLink({ target, text, entries: get().entries })
+      const next = current.slice(0, start) + link + current.slice(end)
+      try {
+        await guard(() => vault.storage.writeText(path, next))
+      } catch {
+        return "failed"
+      }
+      if (get().vault !== vault) return "linked"
+      index.update(path, next)
+      set({ entries: withTouched(get().entries, [path]) })
+      emitEntryEvent({ kind: "rewritten", path })
+      return "linked"
     },
   }
 })

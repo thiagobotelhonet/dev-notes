@@ -44,7 +44,8 @@ test("linkar: o autocomplete com nome repetido insere a pasta", async ({
   await page.keyboard.press("ControlOrMeta+End")
   await page.keyboard.type("\nVer [[api")
   const list = page.getByRole("listbox")
-  await expect(list.getByRole("option")).toHaveCount(2)
+  /* The demo vault also has "rapido" (spec 003), whose name contains "api". */
+  await expect(list.getByRole("option", { name: /^api/ })).toHaveCount(2)
   await list.getByRole("option", { name: /backend/ }).click()
   await expect(editor(page)).toContainText("Ver [[backend/api]]")
 })

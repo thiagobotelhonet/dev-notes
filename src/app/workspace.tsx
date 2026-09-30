@@ -5,9 +5,11 @@ import {
   FolderOpenIcon,
   FolderXIcon,
   MonitorXIcon,
+  PanelRightIcon,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { BacklinksPanel } from "@/features/backlinks"
 import { NoteEditor, useNoteStore } from "@/features/editor"
 import { LinkChoiceDialog } from "@/features/links"
 import {
@@ -20,6 +22,13 @@ import {
 import { AppConfirm } from "@/shared/components/app-confirm"
 import { AppEmpty } from "@/shared/components/app-empty"
 import { AppShell } from "@/shared/components/app-shell"
+import { Button } from "@/shared/components/ui/button"
+import { Kbd } from "@/shared/components/ui/kbd"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/shared/components/ui/tooltip"
 import {
   basenameOf,
   parentOf,
@@ -27,11 +36,48 @@ import {
   type VaultSession,
 } from "@/shared/vault"
 
-function openNoteAt(path: VaultPath, heading?: string) {
+function openNoteAt(
+  path: VaultPath,
+  place?: { heading?: string; offset?: number }
+) {
   useNoteStore
     .getState()
-    .open(path, heading ? { heading } : undefined)
+    .open(path, place)
     .catch(() => toast.error("Não foi possível abrir a nota."))
+}
+
+const isMac =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
+const backlinksShortcut = isMac ? "Cmd+Shift+B" : "Ctrl+Shift+B"
+
+/** Shows or hides the backlinks panel; the shortcut is visible in the tooltip (LAY-06). */
+function BacklinksToggle({
+  visible,
+  onToggle,
+}: {
+  visible: boolean
+  onToggle: () => void
+}) {
+  const label = visible ? "Esconder backlinks" : "Mostrar backlinks"
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={label}
+            onClick={onToggle}
+          />
+        }
+      >
+        <PanelRightIcon aria-hidden="true" />
+      </TooltipTrigger>
+      <TooltipContent>
+        {label} <Kbd>{backlinksShortcut}</Kbd>
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 /** Turns what a link leads to into UI (contracts/ui.md "Seguir link"). */
@@ -48,7 +94,10 @@ function useFollowLink() {
         setChoice(outcome)
         return
       case "open":
-        openNoteAt(outcome.path, outcome.heading)
+        openNoteAt(
+          outcome.path,
+          outcome.heading ? { heading: outcome.heading } : undefined
+        )
         if (outcome.created) {
           const folder = parentOf(outcome.path)
           toast.success(
@@ -92,7 +141,7 @@ function useFollowLink() {
 
   const choose = (path: VaultPath) => {
     setChoice(null)
-    openNoteAt(path, choice?.heading)
+    openNoteAt(path, choice?.heading ? { heading: choice.heading } : undefined)
   }
 
   const dialogs = (
@@ -117,7 +166,13 @@ function useFollowLink() {
   return { follow, dialogs }
 }
 
-function CenterPane() {
+function CenterPane({
+  backlinksVisible,
+  onToggleBacklinks,
+}: {
+  backlinksVisible: boolean
+  onToggleBacklinks: () => void
+}) {
   const status = useVaultStore((state) => state.status)
   const entries = useVaultStore((state) => state.entries)
   const pick = useVaultStore((state) => state.pick)
@@ -188,7 +243,16 @@ function CenterPane() {
   if (notePath)
     return (
       <>
-        <NoteEditor key={notePath} onFollowLink={follow} />
+        <NoteEditor
+          key={notePath}
+          onFollowLink={follow}
+          actions={
+            <BacklinksToggle
+              visible={backlinksVisible}
+              onToggle={onToggleBacklinks}
+            />
+          }
+        />
         {dialogs}
       </>
     )
@@ -215,11 +279,33 @@ export function Workspace({ session }: { session?: VaultSession }) {
   const status = useVaultStore((state) => state.status)
   const vaultName = useVaultStore((state) => state.ref?.name)
   const activePath = useNoteStore((state) => state.path)
+  const noteStatus = useNoteStore((state) => state.status)
+  /* Open by default; the choice lasts for the session (spec 003, Assumptions). */
+  const [backlinksVisible, setBacklinksVisible] = useState(true)
+  const toggleBacklinks = () => setBacklinksVisible((visible) => !visible)
 
   useEffect(() => {
     useNoteStore.getState().close()
     void useVaultStore.getState().restore(session)
   }, [session])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const modifier = isMac ? event.metaKey : event.ctrlKey
+      if (!modifier || !event.shiftKey || event.key.toLowerCase() !== "b")
+        return
+      event.preventDefault()
+      setBacklinksVisible((visible) => !visible)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
+
+  const showBacklinks =
+    status === "ready" &&
+    activePath !== null &&
+    noteStatus !== "missing" &&
+    backlinksVisible
 
   const openNote = (path: VaultPath) => openNoteAt(path)
 
@@ -237,8 +323,20 @@ export function Workspace({ session }: { session?: VaultSession }) {
           <VaultTree activePath={activePath} onOpenNote={openNote} />
         ) : null
       }
+      aside={
+        showBacklinks && activePath ? (
+          <BacklinksPanel
+            path={activePath}
+            onOpen={(path, offset) => openNoteAt(path, { offset })}
+            onClose={() => setBacklinksVisible(false)}
+          />
+        ) : undefined
+      }
     >
-      <CenterPane />
+      <CenterPane
+        backlinksVisible={backlinksVisible}
+        onToggleBacklinks={toggleBacklinks}
+      />
     </AppShell>
   )
 }

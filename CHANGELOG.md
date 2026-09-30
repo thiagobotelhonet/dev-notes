@@ -23,3 +23,9 @@
   vez; menu "…" da árvore mais largo; bloco `![[nota#Seção]]` mantém o nome da
   seção quando a nota não existe.
 - `pnpm dev` e `pnpm dev:mock` passam a usar a porta 5000.
+- Feature 003 — Backlinks (`specs/003-backlinks/`): painel à direita com as
+  notas que apontam para a nota aberta e as menções sem link, que podem virar
+  link. Componentes shadcn novos: `item` e `scroll-area`.
+- Código sem uso (import, variável, parâmetro) passa a ser barrado pelo Biome,
+  como erro, e não mais pelo TypeScript: a pasta gerada `ui/` fica de fora
+  (CMP-01).

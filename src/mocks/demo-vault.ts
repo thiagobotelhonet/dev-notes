@@ -12,6 +12,8 @@ export const demoVault: Record<VaultPath, string> = {
     "Repetido: [[util]]",
     "Canvas: [[mapa.canvas]]",
     "",
+    "Ontem o deploy falhou por falta de espaço.",
+    "",
   ].join("\n"),
   "deploy.md": [
     "# Deploy",
@@ -32,6 +34,8 @@ export const demoVault: Record<VaultPath, string> = {
     "",
     "![[checklist#Antes do deploy]]",
     "",
+    "Se falhar, Rodar o Deploy de novo.",
+    "",
   ].join("\n"),
   "checklist.md": [
     "# Checklist",
@@ -46,6 +50,10 @@ export const demoVault: Record<VaultPath, string> = {
     "",
   ].join("\n"),
   "a.md": "# A\n\n![[b]]\n",
+  "rapido.md": "# Rápido\n\nrapidamente, api-gateway e api_v2\n",
+  "notas.md":
+    "# Notas\n\n[[backend/api]] e [[api]]; a api (nova) sai amanhã.\n",
+  "db.md": "# DB\n\nNome curto: não gera menções.\n",
   "b.md": "# B\n\n![[a]]\n",
   "mapa.canvas": JSON.stringify(
     {

@@ -108,7 +108,7 @@ describe("excluir", () => {
   it("CA-NOTA-009-02 — cancelar a exclusão da pasta não altera nada", async () => {
     const { user, dialog } = await askToDelete("rascunhos")
     await user.keyboard("{Escape}")
-    expect(dialog).not.toBeInTheDocument()
+    await expect.poll(() => dialog.isConnected).toBe(false)
     expect(memory.files()).toEqual(seed)
   })
 

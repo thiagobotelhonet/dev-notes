@@ -163,7 +163,10 @@ reaproveitado.
 - Por quê: a pasta é atualizável enquanto for gerada. Editada à mão, cada
   atualização vira conflito.
 - Consequência: o Biome não analisa essa pasta (veja `biome.json`), e as regras
-  de estilo deste documento não valem lá.
+  de estilo deste documento não valem lá. Por isso import, variável e parâmetro
+  sem uso são barrados pelo Biome (`noUnused*` como erro), e não pelo
+  TypeScript: o código gerado às vezes traz um import sem uso, e o
+  `noUnusedLocals` quebraria o typecheck.
 - `src/shared/hooks/use-mobile.ts` também é gerado pelo shadcn (junto com a
   `Sidebar`) e fica na mesma exceção, inclusive da COD-05.
 

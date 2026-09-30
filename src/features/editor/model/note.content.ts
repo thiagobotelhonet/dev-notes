@@ -19,6 +19,11 @@ export function decodeNote(raw: string): DecodedNote {
   return { text: body.replace(/\r\n/g, "\n"), lineEnding, bom }
 }
 
+/** A position in the file (as the link index sees it) turned into one in the editor text. */
+export function editorOffset(raw: string, offset: number): number {
+  return decodeNote(raw.slice(0, offset)).text.length
+}
+
 /** Puts back the original line ending and BOM, so only edited text changes (FR-004). */
 export function encodeNote(
   text: string,

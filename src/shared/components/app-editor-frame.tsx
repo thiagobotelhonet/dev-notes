@@ -6,10 +6,12 @@ import { Badge } from "./ui/badge"
 export function AppEditorFrame({
   title,
   pending,
+  actions,
   children,
 }: {
   title: string
   pending: boolean
+  actions?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -25,6 +27,7 @@ export function AppEditorFrame({
             Não gravado
           </Badge>
         )}
+        {actions && <div className="ml-auto flex items-center">{actions}</div>}
       </header>
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>
     </section>

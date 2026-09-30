@@ -108,3 +108,35 @@ describe("abrir o vault duas vezes ao mesmo tempo", () => {
     await expect.poll(paths).toContain("nova.md")
   })
 })
+
+describe("nota criada por fora com leitura lenta (antivírus)", () => {
+  it("entries muda de novo depois de o índice incluir a nota nova", async () => {
+    const { storage } = store().vault ?? {}
+    if (!storage) throw new Error("No open vault")
+    const readMany = storage.readMany.bind(storage)
+    storage.readMany = async (paths) => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      return readMany(paths)
+    }
+    const seen: boolean[] = []
+    const stop = useVaultStore.subscribe((state, previous) => {
+      if (state.entries !== previous.entries)
+        seen.push(
+          Boolean(
+            state.linkIndex
+              ?.linksTo("deploy.md")
+              .some((link) => link.source === "nova.md")
+          )
+        )
+    })
+    try {
+      await external("created", "nova.md", "[[deploy]]")
+      await expect.poll(() => seen.at(-1)).toBe(true)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      expect(seen.at(-1)).toBe(true)
+    } finally {
+      stop()
+      storage.readMany = readMany
+    }
+  })
+})

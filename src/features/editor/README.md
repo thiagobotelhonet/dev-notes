@@ -7,8 +7,8 @@ alterações feitas fora do app (`RN-NOTA-007`, `RN-NOTA-008`).
 
 | Export | Para quê |
 |---|---|
-| `NoteEditor` | editor da nota aberta, dentro do `app-editor-frame`; recebe `onFollowLink` |
-| `useNoteStore` | nota aberta, edição pendente e as ações (`open(path, { heading })`, `edit`, `flush`…) |
+| `NoteEditor` | editor da nota aberta, dentro do `app-editor-frame`; recebe `onFollowLink` e `actions` (botões do cabeçalho) |
+| `useNoteStore` | nota aberta, edição pendente e as ações (`open(path, { heading } | { offset })`, `edit`, `flush`…) |
 
 O editor depende do `vault` (ganchos `onBeforeMutate` e `onEntryEvent`); o
 `vault` nunca importa o editor.
@@ -43,6 +43,11 @@ dentro da mesma exceção.
   mudam as notas do vault ou o registro de notas excluídas (research R9).
 - Link para seção abre a nota com o cursor no título (`open(path, { heading
   })`); seção inexistente abre no início.
+- Um trecho do painel de backlinks (spec 003) abre a nota com o cursor na
+  posição do link (`open(path, { offset })`), rolando até ela. Pedir a mesma
+  posição de novo move o cursor outra vez. O `offset` é do arquivo, como o
+  índice de links vê (com BOM e CRLF); o editor converte para o texto dele
+  (`editorOffset`).
 
 ## Incorporação (`![[nota]]`, RN-EMBED-001..003)
 

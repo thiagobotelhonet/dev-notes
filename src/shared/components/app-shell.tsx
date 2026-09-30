@@ -16,10 +16,13 @@ import { TooltipProvider } from "./ui/tooltip"
 export function AppShell({
   sidebarHeader,
   sidebar,
+  aside,
   children,
 }: {
   sidebarHeader: ReactNode
   sidebar: ReactNode
+  /** Right side panel, like backlinks (LAY-03); resizable like the rest (LAY-05). */
+  aside?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -41,6 +44,14 @@ export function AppShell({
               {children}
             </main>
           </ResizablePanel>
+          {aside && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize="24%" minSize="16%" maxSize="40%">
+                <aside className="h-full min-w-0 border-l">{aside}</aside>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </SidebarProvider>
     </TooltipProvider>
