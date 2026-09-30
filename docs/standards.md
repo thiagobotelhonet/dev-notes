@@ -362,7 +362,10 @@ obrigatórias; o nível de cada uma diz o quanto.
 - Exceção registrada no ADR-006 (`decisions/0012-zustand-workspace-state.md`):
   estado de workspace compartilhado pelo explorador, pelo editor, pelo
   observador de arquivos e pelos diálogos fica numa store Zustand da feature
-  dona dele. Nenhuma outra store é criada sem um estado que não caiba em
+  dona dele. O estado do índice de busca (em construção ou pronto, e a
+  revisão) também fica numa store, `search.store.ts`, pelo ADR-007
+  (`decisions/0016-minisearch-in-memory.md`); o termo digitado continua no
+  componente. Nenhuma outra store é criada sem um estado que não caiba em
   nenhuma linha dessa tabela.
 - A store guarda o que foi lido do disco, não uma cópia que vira verdade: o
   arquivo prevalece (constituição, princípio II).

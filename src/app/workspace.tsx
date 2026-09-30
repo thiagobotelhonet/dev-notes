@@ -1,17 +1,22 @@
 import {
   FilePlusIcon,
+  FileSearchIcon,
   FileTextIcon,
   FileWarningIcon,
   FolderOpenIcon,
+  FolderTreeIcon,
   FolderXIcon,
+  type LucideIcon,
   MonitorXIcon,
   PanelRightIcon,
+  SearchIcon,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { BacklinksPanel } from "@/features/backlinks"
 import { NoteEditor, useNoteStore } from "@/features/editor"
 import { LinkChoiceDialog } from "@/features/links"
+import { QuickSearchDialog, SearchPanel } from "@/features/search"
 import {
   type FollowOutcome,
   type FollowRequest,
@@ -25,6 +30,12 @@ import { AppShell } from "@/shared/components/app-shell"
 import { Button } from "@/shared/components/ui/button"
 import { Kbd } from "@/shared/components/ui/kbd"
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/tabs"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -35,6 +46,10 @@ import {
   type VaultPath,
   type VaultSession,
 } from "@/shared/vault"
+
+/* Stable, so the result list does not rebuild on every workspace render. */
+const openSearchResult = (path: VaultPath, offset?: number) =>
+  openNoteAt(path, offset === undefined ? undefined : { offset })
 
 function openNoteAt(
   path: VaultPath,
@@ -48,17 +63,50 @@ function openNoteAt(
 
 const isMac =
   typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
-const backlinksShortcut = isMac ? "Cmd+Shift+B" : "Ctrl+Shift+B"
+const modifierKey = isMac ? "Cmd" : "Ctrl"
+const backlinksShortcut = `${modifierKey}+Shift+B`
+const quickSearchShortcut = `${modifierKey}+P`
+const searchShortcut = `${modifierKey}+Shift+F`
+const filesShortcut = `${modifierKey}+Shift+E`
 
-/** Shows or hides the backlinks panel; the shortcut is visible in the tooltip (LAY-06). */
-function BacklinksToggle({
-  visible,
-  onToggle,
+type SidebarTab = "files" | "search"
+
+function SidebarTabTrigger({
+  value,
+  label,
+  icon: Icon,
+  shortcut,
 }: {
-  visible: boolean
-  onToggle: () => void
+  value: SidebarTab
+  label: string
+  icon: LucideIcon
+  shortcut: string
 }) {
-  const label = visible ? "Esconder backlinks" : "Mostrar backlinks"
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<TabsTrigger value={value} />}>
+        <Icon aria-hidden="true" />
+        {label}
+      </TooltipTrigger>
+      <TooltipContent>
+        {label} <Kbd>{shortcut}</Kbd>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Icon button whose shortcut is visible in the tooltip (LAY-06). */
+function ShortcutButton({
+  label,
+  shortcut,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  shortcut: string
+  icon: LucideIcon
+  onClick: () => void
+}) {
   return (
     <Tooltip>
       <TooltipTrigger
@@ -67,16 +115,33 @@ function BacklinksToggle({
             variant="ghost"
             size="icon-sm"
             aria-label={label}
-            onClick={onToggle}
+            onClick={onClick}
           />
         }
       >
-        <PanelRightIcon aria-hidden="true" />
+        <Icon aria-hidden="true" />
       </TooltipTrigger>
       <TooltipContent>
-        {label} <Kbd>{backlinksShortcut}</Kbd>
+        {label} <Kbd>{shortcut}</Kbd>
       </TooltipContent>
     </Tooltip>
+  )
+}
+
+function BacklinksToggle({
+  visible,
+  onToggle,
+}: {
+  visible: boolean
+  onToggle: () => void
+}) {
+  return (
+    <ShortcutButton
+      label={visible ? "Esconder backlinks" : "Mostrar backlinks"}
+      shortcut={backlinksShortcut}
+      icon={PanelRightIcon}
+      onClick={onToggle}
+    />
   )
 }
 
@@ -283,6 +348,10 @@ export function Workspace({ session }: { session?: VaultSession }) {
   /* Open by default; the choice lasts for the session (spec 003, Assumptions). */
   const [backlinksVisible, setBacklinksVisible] = useState(true)
   const toggleBacklinks = () => setBacklinksVisible((visible) => !visible)
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false)
+  /* The tab lasts for the session; the app opens on the tree (contracts/ui.md). */
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("files")
+  const [searchFocus, setSearchFocus] = useState(0)
 
   useEffect(() => {
     useNoteStore.getState().close()
@@ -301,6 +370,30 @@ export function Workspace({ session }: { session?: VaultSession }) {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
+  /* Capture phase: the editor must not see them, and WebView2 would print on Ctrl+P (research R11). */
+  useEffect(() => {
+    const actions: Record<string, () => void> = {
+      p: () => setQuickSearchOpen(true),
+      "shift+f": () => {
+        setSidebarTab("search")
+        setSearchFocus((request) => request + 1)
+      },
+      "shift+e": () => setSidebarTab("files"),
+    }
+    const onKey = (event: KeyboardEvent) => {
+      const modifier = isMac ? event.metaKey : event.ctrlKey
+      const action =
+        modifier &&
+        actions[`${event.shiftKey ? "shift+" : ""}${event.key.toLowerCase()}`]
+      if (!action) return
+      event.preventDefault()
+      event.stopPropagation()
+      if (useVaultStore.getState().status === "ready") action()
+    }
+    window.addEventListener("keydown", onKey, { capture: true })
+    return () => window.removeEventListener("keydown", onKey, { capture: true })
+  }, [])
+
   const showBacklinks =
     status === "ready" &&
     activePath !== null &&
@@ -312,15 +405,54 @@ export function Workspace({ session }: { session?: VaultSession }) {
   return (
     <AppShell
       sidebarHeader={
-        <p className="truncate px-2 py-1 font-semibold text-sm">
-          {vaultName ?? "Dev Notes"}
-        </p>
+        <div className="flex items-center gap-1">
+          <p className="min-w-0 flex-1 truncate px-2 py-1 font-semibold text-sm">
+            {vaultName ?? "Dev Notes"}
+          </p>
+          {status === "ready" && (
+            <ShortcutButton
+              label="Abrir nota pelo nome"
+              shortcut={quickSearchShortcut}
+              icon={FileSearchIcon}
+              onClick={() => setQuickSearchOpen(true)}
+            />
+          )}
+        </div>
       }
       sidebar={
         status === "loading" ? (
           <VaultTreeSkeleton />
         ) : status === "ready" ? (
-          <VaultTree activePath={activePath} onOpenNote={openNote} />
+          <Tabs
+            value={sidebarTab}
+            onValueChange={(value) => setSidebarTab(value as SidebarTab)}
+            className="h-full min-h-0 gap-0"
+          >
+            <TabsList variant="line" className="w-full shrink-0 px-2">
+              <SidebarTabTrigger
+                value="files"
+                label="Arquivos"
+                icon={FolderTreeIcon}
+                shortcut={filesShortcut}
+              />
+              <SidebarTabTrigger
+                value="search"
+                label="Busca"
+                icon={SearchIcon}
+                shortcut={searchShortcut}
+              />
+            </TabsList>
+            {/* Kept mounted: the typed search and the tree state survive switching tabs. */}
+            <TabsContent value="files" keepMounted className="min-h-0 pt-2">
+              <VaultTree activePath={activePath} onOpenNote={openNote} />
+            </TabsContent>
+            <TabsContent value="search" keepMounted className="min-h-0">
+              <SearchPanel
+                onOpen={openSearchResult}
+                focusRequest={searchFocus}
+              />
+            </TabsContent>
+          </Tabs>
         ) : null
       }
       aside={
@@ -336,6 +468,11 @@ export function Workspace({ session }: { session?: VaultSession }) {
       <CenterPane
         backlinksVisible={backlinksVisible}
         onToggleBacklinks={toggleBacklinks}
+      />
+      <QuickSearchDialog
+        open={quickSearchOpen}
+        onOpenChange={setQuickSearchOpen}
+        onOpen={openNote}
       />
     </AppShell>
   )

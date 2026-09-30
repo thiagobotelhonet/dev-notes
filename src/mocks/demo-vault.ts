@@ -1,6 +1,6 @@
 import type { VaultPath } from "@/shared/vault"
 
-/** Demo vault of `pnpm dev:mock` and Playwright (quickstart §4 of specs 001 and 002). */
+/** Demo vault of `pnpm dev:mock` and Playwright (quickstart §4 of specs 001 to 004). */
 export const demoVault: Record<VaultPath, string> = {
   "infra.md": [
     "# Infra",
@@ -13,6 +13,8 @@ export const demoVault: Record<VaultPath, string> = {
     "Canvas: [[mapa.canvas]]",
     "",
     "Ontem o deploy falhou por falta de espaço.",
+    "",
+    "Tags: #backend",
     "",
   ].join("\n"),
   "deploy.md": [
@@ -35,6 +37,10 @@ export const demoVault: Record<VaultPath, string> = {
     "![[checklist#Antes do deploy]]",
     "",
     "Se falhar, Rodar o Deploy de novo.",
+    "",
+    "```bash",
+    "kubectl rollout restart deployment/api",
+    "```",
     "",
   ].join("\n"),
   "checklist.md": [
@@ -77,4 +83,11 @@ export const demoVault: Record<VaultPath, string> = {
   "backend/util.md": "# Util do backend\n",
   "frontend/api.md": "# API do frontend\n",
   "frontend/util.md": "# Util do frontend\n",
+  "Configuração.md": "# Configuração\n\nConfiguração do proxy da empresa.\n",
+  "snippets/deploy-api.md":
+    "---\nlinguagem: csharp\n---\n# Deploy da API\n\n#backend\n\nComo fazer o deploy da API em C#.\n",
+  "snippets/hello-py.md":
+    '---\nlinguagem: python\ntags: [backend/api]\n---\n# Hello\n\nprint("olá")\n',
+  "snippets/dotnet/build.md":
+    "---\nlinguagem: csharp\n---\n# Build\n\nAntes do deploy, rodar o build do .NET.\n",
 }

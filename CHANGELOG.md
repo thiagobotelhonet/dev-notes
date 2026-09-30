@@ -29,3 +29,9 @@
 - Código sem uso (import, variável, parâmetro) passa a ser barrado pelo Biome,
   como erro, e não mais pelo TypeScript: a pasta gerada `ui/` fica de fora
   (CMP-01).
+- Feature 004 — Busca (`specs/004-busca/`): busca rápida por nome
+  (`Ctrl+P`) e busca completa na lateral (`Ctrl+Shift+F`), com filtros de
+  tag, pasta e propriedade. Dependências novas: `minisearch` 7.2.0 e `yaml`
+  2.9.1. Componentes shadcn novos: `tabs` e `combobox`. O destaque da
+  ocorrência passa a ser o azul da marca translúcido, também nos backlinks
+  (`docs/brand.md` §2.4).

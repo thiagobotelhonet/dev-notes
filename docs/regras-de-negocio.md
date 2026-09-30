@@ -634,6 +634,114 @@ DADO que a nota `deploy` e a nota `infra` (que cita "deploy" no texto) existem
 QUANDO o usuário busca `deploy`
 ENTÃO `deploy` aparece antes de `infra`
 
+**CA-BUSCA-001-01 — Conteúdo de bloco de código** (Positivo · RN-BUSCA-001 · spec 004)
+DADO que `runbook` tem um bloco de código com `kubectl rollout restart`
+QUANDO o usuário busca `rollout`
+ENTÃO `runbook` aparece, com o trecho da linha do bloco
+
+**CA-BUSCA-001-02 — Várias palavras** (Positivo · RN-BUSCA-001 · spec 004)
+DADO que `infra` contém "deploy" e "falhou" em linhas diferentes e `runbook` contém só "deploy"
+QUANDO o usuário busca `deploy falhou`
+ENTÃO só `infra` aparece
+
+**CA-BUSCA-001-03 — Frase exata** (Positivo · RN-BUSCA-001 · spec 004)
+DADO que `infra` contém "o deploy falhou" e `runbook` contém "falhou o deploy"
+QUANDO o usuário busca `"deploy falhou"`
+ENTÃO só `infra` aparece
+
+**CA-BUSCA-001-04 — Abrir no ponto** (Positivo · RN-BUSCA-001 · spec 004)
+DADO que a busca mostra um trecho de `infra`
+QUANDO o usuário escolhe o trecho
+ENTÃO `infra` abre com o cursor na ocorrência
+
+**CA-BUSCA-001-05 — Palavra parcial não conta** (Negativo · RN-BUSCA-001 · spec 004)
+DADO que uma nota contém só "rapidamente"
+QUANDO o usuário busca `api`
+ENTÃO essa nota não aparece
+
+**CA-BUSCA-001-06 — Resultado acompanha mudanças** (Positivo · RN-BUSCA-001 · spec 004)
+DADO que a busca por `rollout` está aberta
+QUANDO outra nota passa a conter "rollout" (pelo app ou por outra ferramenta)
+ENTÃO ela entra no resultado sem o usuário buscar de novo
+
+**CA-BUSCA-002-02 — Tag mãe inclui as filhas** (Positivo · RN-BUSCA-002, RN-TAG-002 · spec 004)
+DADO que a nota A tem `#backend` e a nota B tem `#backend/api`
+QUANDO o usuário busca `tag:#backend`
+ENTÃO A e B aparecem
+E buscando `tag:#backend/api`, só B aparece
+
+**CA-BUSCA-002-03 — Filtro por propriedade** (Positivo · RN-BUSCA-002 · spec 004)
+DADO que `hello-cs` tem `linguagem: csharp` e `hello-py` tem `linguagem: python` no topo
+QUANDO o usuário busca `linguagem:csharp`
+ENTÃO só `hello-cs` aparece
+
+**CA-BUSCA-002-04 — Só filtros, sem texto** (Positivo · RN-BUSCA-002 · spec 004)
+DADO que três notas têm `#backend`
+QUANDO o usuário busca `tag:#backend`
+ENTÃO as três aparecem
+
+**CA-BUSCA-002-05 — Tag em código não conta** (Negativo · RN-BUSCA-002 · spec 004)
+DADO que `infra` só tem `#backend` dentro de um bloco de código
+QUANDO o usuário busca `tag:#backend`
+ENTÃO `infra` não aparece
+E buscando o texto `backend`, aparece
+
+**CA-BUSCA-002-06 — Pasta inclui subpastas** (Positivo · RN-BUSCA-002 · spec 004)
+DADO que existe `snippets/dotnet/deploy-api`
+QUANDO o usuário busca `deploy pasta:snippets`
+ENTÃO a nota aparece
+
+**CA-BUSCA-002-07 — Texto com dois-pontos que não é filtro** (Alternativo · RN-BUSCA-002 · spec 004)
+DADO que nenhuma nota tem a propriedade `http` e `infra` contém "http://intranet"
+QUANDO o usuário busca `http://intranet`
+ENTÃO `infra` aparece: o termo é tratado como texto
+
+**CA-BUSCA-005-01 — Abrir nota pelo nome** (Positivo · RN-BUSCA-005 · spec 004)
+DADO que existem as notas `deploy` e `infra`
+QUANDO o usuário abre a busca rápida, digita `depl` e confirma
+ENTÃO `deploy` abre
+
+**CA-BUSCA-005-02 — Nome repetido mostra a pasta** (Positivo · RN-BUSCA-005 · spec 004)
+DADO que existem `backend/api` e `frontend/api`
+QUANDO o usuário digita `api` na busca rápida
+ENTÃO as duas aparecem, cada uma com a pasta, e o usuário escolhe qual abrir
+
+**CA-BUSCA-005-03 — Nome sem acento** (Positivo · RN-BUSCA-003, 005 · spec 004)
+DADO que existe a nota `Configuração`
+QUANDO o usuário digita `configuracao` na busca rápida
+ENTÃO a nota aparece
+
+**CA-BUSCA-005-04 — Só pelo teclado** (Positivo · RN-BUSCA-005 · spec 004)
+DADO que a busca rápida está aberta com resultados
+QUANDO o usuário usa as setas e Enter
+ENTÃO a nota escolhida abre
+E Esc fecha a busca sem abrir nada
+
+**CA-BUSCA-005-05 — Nenhuma nota** (Negativo · RN-BUSCA-005 · spec 004)
+DADO que nenhuma nota tem "xyz" no nome
+QUANDO o usuário digita `xyz` na busca rápida
+ENTÃO a busca diz que nenhuma nota tem esse nome
+
+**CA-BUSCA-006-01 — Sugestão de tags** (Positivo · RN-BUSCA-006 · spec 004)
+DADO que existem `#backend` e `#backend/api`
+QUANDO o usuário digita `tag:#ba`
+ENTÃO as duas tags são sugeridas
+
+**CA-BUSCA-006-02 — Sugestão de pastas** (Positivo · RN-BUSCA-006 · spec 004)
+DADO que existem as pastas `snippets` e `snippets/dotnet`
+QUANDO o usuário digita `pasta:sn`
+ENTÃO as duas são sugeridas
+
+**CA-BUSCA-006-03 — Sugestão de valores de propriedade** (Positivo · RN-BUSCA-006 · spec 004)
+DADO que há notas com `linguagem: csharp` e `linguagem: python`
+QUANDO o usuário digita `linguagem:`
+ENTÃO `csharp` e `python` são sugeridos
+
+**CA-BUSCA-006-04 — Escolher a sugestão** (Positivo · RN-BUSCA-006 · spec 004)
+DADO que `#backend` está sugerida
+QUANDO o usuário a escolhe com o teclado
+ENTÃO o termo vira `tag:#backend` e a busca é feita
+
 **CA-BACK-001-01 — Painel de backlinks** (Positivo · RN-BACK-001 · spec 003)
 DADO que `infra` e `runbook` contêm `[[deploy]]`
 QUANDO o usuário abre `deploy`
@@ -740,7 +848,7 @@ ENTÃO só aquela vira link e a outra continua na lista
 | OBJ-PROD-001 | DEC-PROD-013 | RN-NOTA-007, 008 | FL-NOTA-003 | CA-NOTA-007-01, CA-NOTA-008-01 |
 | OBJ-PROD-001 | DEC-PROD-006, 020, 021 | RN-EMBED-*, RN-TAG-*, RN-PROP-*, RN-DIARIO-*, RN-HIST-* | — | CA-EMBED-001-01/02/03, CA-EMBED-002-01, CA-EMBED-003-01, CA-DIARIO-002-01, CA-HIST-003-01, CA-TAG-002-01/02, CA-PROP-003-01 |
 | OBJ-PROD-001 | DEC-PROD-005 | RN-CANVAS-* | — | CA-CANVAS-001-01, CA-CANVAS-002-01 |
-| OBJ-PROD-001 | DEC-PROD-015 | RN-BUSCA-* | — | CA-BUSCA-002-01, CA-BUSCA-003-01, CA-BUSCA-004-01 |
+| OBJ-PROD-001 | DEC-PROD-015 | RN-BUSCA-* | — | CA-BUSCA-001-01 a 06, CA-BUSCA-002-01 a 07, CA-BUSCA-003-01, CA-BUSCA-004-01, CA-BUSCA-005-01 a 05, CA-BUSCA-006-01 a 04 |
 | OBJ-PROD-001 | DEC-PROD-016 | RN-BACK-* | — | CA-BACK-001-01 a 06, CA-BACK-002-01/02, CA-BACK-003-01 a 04, CA-BACK-004-01 a 04 |
 | OBJ-PROD-002 | DEC-PROD-017 | RN-UI-* | — | — |
 | OBJ-PROD-002 | DEC-PROD-009 | RN-SNIPPET-* | — | CA-SNIPPET-002-01 |

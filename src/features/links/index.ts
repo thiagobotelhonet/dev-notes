@@ -14,7 +14,11 @@ export {
   mentionLink,
   mentionsSearched,
 } from "./model/links.mentions"
-export { type LinkOccurrence, parseLinks } from "./model/links.parser"
+export {
+  codeRanges,
+  type LinkOccurrence,
+  parseLinks,
+} from "./model/links.parser"
 export {
   affectedByMoves,
   type ChangePlan,
@@ -30,3 +34,4 @@ export {
   linkHeading,
   resolveLinkTarget,
 } from "./model/links.target"
+export { foldText, foldTextUntrimmed } from "./model/links.text"

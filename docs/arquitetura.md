@@ -98,7 +98,7 @@ dev-notes/
 │   │   ├── links/                  # links, links pendentes/quebrados, incorporação
 │   │   ├── backlinks/              # painel de backlinks e menções sem link
 │   │   ├── canvas/
-│   │   ├── search/                 # busca rápida e completa
+│   │   ├── search/                 # busca rápida (Ctrl+P) e completa na lateral (spec 004)
 │   │   ├── command-palette/
 │   │   ├── workspace/              # abas, painéis, layout salvo
 │   │   ├── properties/
@@ -154,8 +154,8 @@ features/links/
 | Explorador de arquivos (árvore) | `Sidebar` (menu) + `Collapsible` + `Context Menu` |
 | Abas de notas | `Tabs` + `Button` (fechar) + `Tooltip` |
 | Painéis divididos | `Resizable` |
-| Paleta de comandos e busca rápida | `Command` (em `Dialog`) + `Kbd` |
-| Busca completa e filtros | `Input Group` + `Command`/`Combobox` (autocomplete de filtros) + `Scroll Area` + `Item` |
+| Paleta de comandos e busca rápida | `Command` (em `Dialog`) + `Kbd`; a busca rápida usa o `CommandDialog` direto, como os diálogos "Mover para…" e "Qual nota abrir?" |
+| Busca completa e filtros | aba "Busca" da barra lateral (`Tabs`, ao lado de "Arquivos"), em `app-panel`: `Combobox` sobre `Input Group` (sugestões de filtro) + `app-note-list` |
 | Backlinks e menções sem link | `Item` + `Collapsible` (seção recolhida) + `Button` |
 | Propriedades | `Field` + `Input` + `Switch` + `Date Picker` + `Combobox` (lista) + `Badge` |
 | Valor inválido em propriedade | `Field` (estado de erro) + ícone + texto (CMP-08) |
@@ -181,10 +181,10 @@ Peças que montam telas inteiras levam o prefixo `app-` (CMP-04). Toda tela nova
 | `app-shell` | `Sidebar` esquerda + área central + painel direito (`aside`, opcional), dentro de `Resizable` | Toda a aplicação; o lado direito recebe o painel de backlinks |
 | `app-tabs` | Abas de nota com fechar, indicador de alteração pendente e menu | workspace, editor, canvas |
 | `app-panel` | Cabeçalho (título + ações) + `Scroll Area`; o vazio fica com quem usa (`app-empty`) | backlinks (desde a spec 003), histórico, propriedades, snippets, tags |
-| `app-note-list` | Lista de notas com `Item`: ícone, nome, pasta e trechos clicáveis, cada um com ação opcional | backlinks (desde a spec 003), busca, histórico, snippets |
+| `app-note-list` | Lista de notas com `Item`: ícone, nome, pasta, informação curta (ex.: ocorrências), nota clicável opcional e trechos clicáveis, cada um com ação opcional; recebe o trecho em partes e desenha o destaque (`brand.md` §2.4) | backlinks (desde a spec 003), busca (desde a spec 004), histórico, snippets |
 | `app-confirm` | `Alert Dialog` padrão de confirmação; `tone="default"` quando nada é destruído | excluir nota/pasta, restaurar versão, recriar nota excluída |
 | `app-choice-dialog` | `Alert Dialog` com duas opções nomeadas | conflito de edição externa |
-| `app-command` | `Command` em `Dialog`, com grupos e atalhos `Kbd` | paleta de comandos, busca rápida |
+| `app-command` | `Command` em `Dialog`, com grupos e atalhos `Kbd` | paleta de comandos (nasce com ela: é a primeira tela com grupos e atalhos; a busca rápida não precisa) |
 | `app-empty` | `Empty` com ícone, texto e ação | vault vazio, sem resultados, painel vazio |
 | `app-editor-frame` | Moldura do CodeMirror com tokens do tema | editor, incorporação |
 | `app-canvas-frame` | Moldura do React Flow com tokens e barra de ferramentas | canvas |
@@ -293,7 +293,7 @@ apagar a pasta não perde nenhuma nota (ADR-009).
 | RN-LINK-*, RN-EMBED-* | `links` (regra pura: estado, sugestões, seções, incorporação); `vault` segue o link e cria a nota pendente (`followLink`); `editor` destaca, sugere e mostra os blocos |
 | RN-BACK-* | `backlinks` (painel, agrupamento e trechos); `links` (regra da menção: `findMentions`, `mentionLink`, texto no índice); `vault` grava a menção como link (`linkMention`); `editor` abre no ponto (`open` com `offset`) |
 | RN-CANVAS-* | `canvas` |
-| RN-BUSCA-* | `search` |
+| RN-BUSCA-* | `search` (índice MiniSearch sobre o texto do índice de links, consulta, filtros, tags e propriedades lidas do texto, as duas buscas); `links` empresta `suggestLinks`, `foldText` e `codeRanges` |
 | RN-UI-* | `command-palette`, `workspace` |
 | RN-TAG-* | `tags` |
 | RN-PROP-* | `properties` |
@@ -338,7 +338,7 @@ O adapter registra cada escrita do próprio app e ignora o evento correspondente
 | ADR-004 | CodeMirror 6 como editor | **Aceito** (`decisions/0011`) | Extensível vs. API de baixo nível |
 | ADR-005 | React Flow + JSON Canvas | Proposto | Pronto e compatível vs. menos liberdade visual |
 | ADR-006 | Zustand para estado de workspace | **Aceito** (`decisions/0012`) | Estado global real (abas, nota ativa, pendências) vs. exceção à regra do template de evitar store global |
-| ADR-007 | MiniSearch em memória | Proposto | Zero infraestrutura vs. peso em vaults muito grandes |
+| ADR-007 | MiniSearch em memória | **Aceito** (`decisions/0016`) | Zero infraestrutura vs. peso em vaults muito grandes |
 | ADR-008 | `shared/vault` com adapters Tauri e memória | **Aceito** (`decisions/0013`) | Testes e `dev:mock` sem Tauri vs. mais interfaces |
 | ADR-009 | Dados do app em `.devnotes/` | **Aceito** (`decisions/0015`) | Vault portátil vs. pasta extra a ignorar quando houver Git |
 | ADR-010 | Não usar Yjs no MVP | Proposto | Menos complexidade vs. integrar depois para colaboração |

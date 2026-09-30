@@ -94,6 +94,19 @@
 | `#475569` sobre branco | 7,58:1 | Aprovado |
 | `#94A3B8` sobre `#0B1220` | 7,30:1 | Aprovado |
 | `#94A3B8` sobre `#1F2937` | 5,72:1 | Aprovado |
+| `#0F172A` sobre `#3B82F6` a 20% em branco | 14,16:1 | Aprovado → destaque de ocorrência no tema claro |
+| `#F8FAFC` sobre `#3B82F6` a 20% em `#0B1220` | 13,97:1 | Aprovado → destaque de ocorrência no tema escuro |
+
+### 2.4 Destaque de ocorrência
+
+A palavra encontrada num trecho (busca, backlinks) usa `bg-brand/20 text-foreground`: o azul da
+marca em fundo translúcido com o texto normal por cima. Vale para toda lista de notas e é
+desenhado só pelo `app-note-list`.
+
+- Por que não `accent`: é a cor de item selecionado, e o destaque aparece dentro de itens que podem
+  estar selecionados.
+- Por que não `brand` sólido: com texto claro por cima fica em 3,68:1 (reprovado); com texto escuro,
+  4,85:1, no limite e pesado demais em trechos com várias ocorrências.
 
 ---
 

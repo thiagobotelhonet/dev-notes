@@ -53,15 +53,7 @@ function toItems(
     description: group.folder || "raiz",
     snippets: group.occurrences.map((occurrence) => ({
       key: String(occurrence.start),
-      content: (
-        <>
-          {occurrence.snippet.before}
-          <mark className="rounded-sm bg-accent px-0.5 text-accent-foreground">
-            {occurrence.snippet.match}
-          </mark>
-          {occurrence.snippet.after}
-        </>
-      ),
+      text: occurrence.snippet,
       badge: occurrence.embed ? "incorporação" : undefined,
       onOpen: () => onOpen(group.source, occurrence.start),
       action: action?.(group, occurrence),

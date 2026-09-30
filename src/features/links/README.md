@@ -15,9 +15,11 @@ editor nem o CodeMirror.
 | `affectedByMoves` | arquivos que uma renomeação ou movimentação reescreve (o editor grava antes) |
 | `planChange`, `ChangePlan`, `EntryMove`, `fileMoves` | plano completo de uma renomeação ou movimentação, calculado antes de gravar (FR-019) |
 | `parseLinks`, `LinkOccurrence` | links de um texto, com posição (o editor destaca e segue) |
+| `codeRanges` | trechos de código (cerca e inline) de um texto, onde links e menções não contam; a busca usa para as tags (spec 004) |
 | `resolveLinkTarget`, `LinkTarget`, `LinkState` | destino e estado de um link; a única regra usada por destaque, seguir link e incorporação |
 | `findSection`, `Section` | trecho de uma nota sob um título (`[[nota#Seção]]`) |
-| `suggestLinks` | sugestões do autocomplete, já ordenadas e com o texto a inserir |
+| `suggestLinks` | sugestões do autocomplete, já ordenadas e com o texto a inserir; a busca rápida usa as mesmas (spec 004) |
+| `foldText`, `foldTextUntrimmed` | texto sem acentos e em minúsculas, para comparar sem diferenciar os dois (sugestões e busca); a versão sem cortar espaços mantém as posições por caractere (destaque da busca) |
 | `embedState`, `EmbedState` | o que um bloco de incorporação mostra |
 | `findMentions`, `Mention`, `mentionLink`, `mentionsSearched` | menções sem link de uma nota, o texto do link que substitui uma menção e se o nome é procurado (spec 003) |
 | `LinkChoiceDialog` | diálogo "Qual nota abrir?" do link ambíguo (`Dialog` + `Command`, no padrão do "Mover para…") |
