@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
-import { type EmbedState, embedState } from "@/features/links"
+import { type EmbedState, embedState, linkHeading } from "@/features/links"
 import { Button } from "@/shared/components/ui/button"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import { basenameOf, type VaultPath } from "@/shared/vault"
@@ -228,7 +228,7 @@ function EmbeddedNote({
   return (
     <EmbedBlock
       name={name}
-      heading={target.state === "valid" ? target.heading : undefined}
+      heading={linkHeading(link.subpath)}
       state={state}
       onOpen={() => follow(link, link.source)}
     >

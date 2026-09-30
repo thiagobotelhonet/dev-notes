@@ -34,6 +34,7 @@ import {
 } from "../../vault.types"
 
 const watchDelayMs = 300
+const rootCheckMs = 2000
 /** Ledger "hash" of a folder, which has no content of its own. */
 const folderMarker = "folder"
 const codes: VaultErrorCode[] = [
@@ -121,6 +122,7 @@ function openTauriVault(ref: VaultRef): OpenVault {
   const beforeClose = new Set<() => Promise<void>>()
   let unwatch: (() => void) | null = null
   let rootGone = false
+  let closed = false
 
   const absolute = (path: VaultPath) => (path === "" ? root : `${root}/${path}`)
   const rootKey = root.replace(/\\/g, "/").toLowerCase()
@@ -316,6 +318,7 @@ function openTauriVault(ref: VaultRef): OpenVault {
   const rootRemoved = () => {
     if (rootGone) return
     rootGone = true
+    clearInterval(rootCheck)
     unwatch?.()
     unwatch = null
     emit([{ kind: "removed", path: "" }])
@@ -335,18 +338,21 @@ function openTauriVault(ref: VaultRef): OpenVault {
     ])
   }
 
-  /** Events are only hints: the real state decides (research R5). */
-  const handle = async (event: WatchEvent) => {
+  /* Events are only hints (research R5); all that arrived meanwhile are checked in one pass. */
+  const handle = async (events: WatchEvent[]) => {
     if (rootGone) return
     if (!(await exists(root).catch(() => false))) return rootRemoved()
-    const attrs = event.attrs as { flag?: string } | null
-    if (attrs?.flag === "rescan") return rescan()
+    const rescanRequested = events.some(
+      (event) => (event.attrs as { flag?: string } | null)?.flag === "rescan"
+    )
+    if (rescanRequested) return rescan()
     const changes: ExternalChange[] = []
-    const paths = [...new Set(event.paths.map(relative))].filter(
+    const paths = [
+      ...new Set(events.flatMap((event) => event.paths.map(relative))),
+    ].filter(
       (path): path is VaultPath =>
         path !== null && path !== "" && !isHiddenPath(path)
     )
-    /* Notes and canvases of one event in a single read (SC-002, SC-004). */
     const texts = new Map<VaultPath, string>()
     const textPaths = paths.filter((path) => kindOf(path) !== "other")
     if (textPaths.length)
@@ -358,45 +364,73 @@ function openTauriVault(ref: VaultRef): OpenVault {
         },
         () => {}
       )
-    for (const path of paths) {
-      try {
+    const hashes = await Promise.all(
+      paths.map((path) => {
         const text = texts.get(path)
-        const hash =
-          text === undefined ? await currentHash(path) : await sha256Hex(text)
-        if (ledger.matches(path, hash)) continue
-        if (hash === null) {
-          if (!known.has(path)) continue
-          forgetTree(path)
-          changes.push({ kind: "removed", path })
-        } else if (!known.has(path)) {
-          addKnown(path)
-          changes.push({ kind: "created", path })
-        } else if (hash !== folderMarker) {
-          changes.push({ kind: "modified", path })
-        }
-      } catch {
-        /* The file changed again while being read; the next event covers it. */
+        return (text === undefined ? currentHash(path) : sha256Hex(text)).catch(
+          () => undefined
+        )
+      })
+    )
+    for (const [position, path] of paths.entries()) {
+      const hash = hashes[position]
+      /* The file changed again while being read; the next event covers it. */
+      if (hash === undefined || ledger.matches(path, hash)) continue
+      if (hash === null) {
+        if (!known.has(path)) continue
+        forgetTree(path)
+        changes.push({ kind: "removed", path })
+      } else if (!known.has(path)) {
+        addKnown(path)
+        changes.push({ kind: "created", path })
+      } else if (hash !== folderMarker) {
+        changes.push({ kind: "modified", path })
       }
     }
     emit(changes)
   }
 
-  let queue = Promise.resolve()
+  let pending: WatchEvent[] = []
+  let draining = false
+  const drain = async () => {
+    draining = true
+    while (pending.length) {
+      const batch = pending
+      pending = []
+      await handle(batch)
+    }
+    draining = false
+  }
   watch(
     root,
     (event) => {
-      queue = queue.then(() => handle(event))
+      pending.push(event)
+      if (!draining) void drain()
     },
     { recursive: true, delayMs: watchDelayMs }
   ).then(
     (stop) => {
-      if (rootGone) stop()
+      /* Closed before the watcher was up: stop it, or it would watch forever. */
+      if (rootGone || closed) stop()
       else unwatch = stop
     },
     () => rootRemoved()
   )
 
   /* A page reload does not run close(); stop watching so Rust drops it. */
+  /* Renaming the root sends no event on Windows (the watch handle follows the folder), so it is checked. */
+  const checkRoot = () => {
+    if (rootGone || closed) return
+    exists(root).then(
+      (present) => {
+        if (!present && !closed) rootRemoved()
+      },
+      () => {}
+    )
+  }
+  const rootCheck = setInterval(checkRoot, rootCheckMs)
+  window.addEventListener("focus", checkRoot)
+
   const stopOnUnload = () => unwatch?.()
   window.addEventListener("beforeunload", stopOnUnload)
 
@@ -441,6 +475,9 @@ function openTauriVault(ref: VaultRef): OpenVault {
       return () => beforeClose.delete(task)
     },
     async close() {
+      closed = true
+      clearInterval(rootCheck)
+      window.removeEventListener("focus", checkRoot)
       window.removeEventListener("beforeunload", stopOnUnload)
       unwatch?.()
       unwatch = null

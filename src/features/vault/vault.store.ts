@@ -127,6 +127,7 @@ let session: VaultSession | null = null
 let unsubscribeWatcher: (() => void) | null = null
 let indexReady: Promise<LinkIndex | null> = Promise.resolve(null)
 let refreshTimer: ReturnType<typeof setTimeout> | undefined
+let openTicket = 0
 
 const deletedFile = "deleted-notes.json"
 const deletedSaveDelayMs = 500
@@ -230,20 +231,29 @@ export const useVaultStore = create<VaultState>()((set, get) => {
       setDeleted(withDeleted(get().deleted, removedNotes, new Date()))
     if (changes.some((change) => change.kind !== "modified")) scheduleRefresh()
     const linkIndex = await indexReady
-    for (const change of changes) {
-      if (get().vault !== vault) return
+    if (get().vault !== vault) return
+    for (const change of changes)
       if (change.kind === "removed") {
         for (const path of linkIndex?.notePaths() ?? [])
           if (isInside(path, change.path)) linkIndex?.remove(path)
         linkIndex?.remove(change.path)
-      } else if (linkIndex && kindOf(change.path) !== "other") {
-        const text = await vault.storage.readText(change.path).catch(() => null)
-        if (text !== null) linkIndex.update(change.path, text)
       }
-      if (change.kind === "modified")
-        set({ entries: withTouched(get().entries, [change.path]) })
-      emitEntryEvent({ kind: "external", change })
+    /* One read and one state update per batch: a branch switch can change thousands of notes. */
+    const readable = changes
+      .filter(
+        (change) => change.kind !== "removed" && kindOf(change.path) !== "other"
+      )
+      .map((change) => change.path)
+    if (linkIndex && readable.length) {
+      const files = await vault.storage.readMany(readable).catch(() => [])
+      if (get().vault !== vault) return
+      for (const file of files) linkIndex.update(file.path, file.content)
     }
+    const modified = changes
+      .filter((change) => change.kind === "modified")
+      .map((change) => change.path)
+    if (modified.length) set({ entries: withTouched(get().entries, modified) })
+    for (const change of changes) emitEntryEvent({ kind: "external", change })
   }
 
   /** Rename and move share one flow; see the module README. */
@@ -308,12 +318,15 @@ export const useVaultStore = create<VaultState>()((set, get) => {
 
   const openRoot = async (root: string, fallback: VaultRef | null) => {
     if (!session) return
+    const ticket = ++openTicket
     await close()
+    if (ticket !== openTicket) return
     set({ status: "loading", ref: fallback })
     let vault: OpenVault
     try {
       vault = await session.open(root)
     } catch {
+      if (ticket !== openTicket) return
       set({ status: "open-failed" })
       toast.error("Não foi possível abrir o vault.")
       return
@@ -321,8 +334,13 @@ export const useVaultStore = create<VaultState>()((set, get) => {
     try {
       const entries = await vault.storage.list()
       const stored = await vault.appData.read(deletedFile).catch(() => null)
+      /* A newer open started meanwhile (StrictMode, a quick re-pick): this one must not stay watching. */
+      if (ticket !== openTicket) {
+        await vault.close()
+        return
+      }
       unsubscribeWatcher = vault.watcher.subscribe((changes) => {
-        void onExternal(changes)
+        if (get().vault === vault) void onExternal(changes)
       })
       vault.onBeforeClose(writeDeleted)
       set({

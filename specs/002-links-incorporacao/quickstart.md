@@ -73,13 +73,27 @@ vault-links/
 
 Vault sintético de 5.000 notas da 001.
 
-| Meta | Esperado |
-| --- | --- |
-| SC-001: sugestões depois de cada tecla | ≤ 0,3 s |
-| SC-003: `Ctrl`+clique em pendente até a nota aberta | ≤ 1 s |
-| SC-004: alteração da original aparecer no bloco | ≤ 2 s |
-| SC-005: nota com 20 incorporações abrir | ≤ 1 s |
-| SC-006: estado do link mudar depois de excluir/criar o destino | ≤ 2 s |
+| Meta | Esperado | Medido (Windows, 2026-09-30) |
+| --- | --- | --- |
+| SC-001: sugestões depois de cada tecla | ≤ 0,3 s | 5–26 ms por tecla; 0,22 s para abrir a lista |
+| SC-003: `Ctrl`+clique em pendente até a nota aberta | ≤ 1 s | 0,31 s |
+| SC-004: alteração da original aparecer no bloco | ≤ 2 s | 0,83 s |
+| SC-005: nota com 20 incorporações abrir | ≤ 1 s | 0,34 s até os blocos visíveis terem conteúdo (o editor só desenha o que está na tela) |
+| SC-006: estado do link mudar depois de excluir/criar o destino | ≤ 2 s | 0,42 s |
+
+Medição no app desktop em **build de desenvolvimento** (`pnpm tauri dev`), com o
+vault sintético (`painel.md` com 20 incorporações) gravado em disco e a
+interface dirigida pelo protocolo de depuração do WebView2. Máquina: Windows 11
+Home 10.0.26200, Intel Core i7-13620H, 32 GB, SSD, com Kaspersky ativo.
+
+**Antivírus e arquivos recém-escritos**: com o Kaspersky, a primeira leitura de
+um arquivo que outro programa acabou de escrever passa pela varredura (5.001
+notas: 22 s na primeira leitura, 0,18 s na segunda, também pelo Node, fora do
+app). Por isso, logo depois de recriar o vault sintético, o índice de links
+demora até ~20 s. As medições acima foram feitas depois dessa primeira leitura.
+Com 999 notas alteradas por fora de uma vez (troca de branch, por exemplo), o
+app fica em dia em ~8 s e a janela responde o tempo todo; o tempo é quase todo a
+leitura sob varredura.
 
 ## 6. Registro de verificação
 
@@ -98,8 +112,30 @@ Vault sintético de 5.000 notas da 001.
   estado do link, bloco de incorporação com recuo e aninhado, aviso de
   incorporação circular e lista do autocomplete.
 
-### Pendente (precisa do app desktop)
+### 2026-09-30 — Windows 11, app desktop
 
-- Roteiro manual da §4 em `pnpm tauri dev` no Windows, e o passo 12 no macOS e
-  no Linux (research R4).
-- Medições da §5 no app desktop com o vault sintético gravado em disco (T057).
+Roteiro da §4 no `pnpm tauri dev`, dirigido pelo protocolo de depuração do
+WebView2, com o vault `vault-links` (os passos e o resultado de cada um estão
+em `dev-notes-teste/CHECKLIST.md`, fora do repositório):
+
+| Passo | Resultado |
+| --- | --- |
+| 1 — estados do link | ok: contínuo, tracejado, ondulado e pontilhado; a dica diz o estado |
+| 2 — `Ctrl`+clique em `[[deploy#Rollback]]` | ok: abre rolada até o título |
+| 3 — `Ctrl+Enter` no pendente | ok: nota criada na raiz, aviso, link volta a válido |
+| 4, 6, 7 — canvas, ambíguo, autocomplete | ok |
+| 8 — blocos de `runbook` | ok |
+| 9 — edição externa da checklist | ok: 0,82 s |
+| 10 — circular | ok |
+| 11, 12 — link quebrado e reabrir | ok: `.devnotes/deleted-notes.json` com `deploy.md`; quebrado depois de recarregar a janela |
+| 13 — recriar | ok |
+| Lixeira do Windows | ok: a exclusão aparece em ~1,3 s e o bloco volta em ~1,5–1,8 s depois de restaurar |
+
+Encontrado e corrigido na validação:
+
+- O bloco `![[nota#Seção]]` perdia o nome da seção quando a nota não existia;
+  agora o nome vem do próprio link.
+- Menu "…" da árvore estreito demais (texto quebrando e atalho cortado).
+
+Ainda não verificado: o passo 12 no macOS e no Linux (pasta começada por ponto,
+research R4).

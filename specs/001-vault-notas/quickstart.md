@@ -180,11 +180,26 @@ No app desktop (`pnpm tauri dev`), com a pasta `vault-teste/` da §4:
 | 12 — alteração externa com edição pendente | ok: diálogo com as duas opções, disco intacto até a escolha, "Manter minha versão" gravou a versão do app |
 | Recarregar a janela (F5) | ok: o vault reabre. Os observadores da página anterior passaram a ser encerrados no `beforeunload` |
 
+Segunda rodada (2026-09-30), no app desktop, dirigida pelo protocolo de
+depuração do WebView2 com o vault `vault-teste` recriado:
+
+| Passo / caso | Resultado |
+| --- | --- |
+| C2, 5 — nomes repetidos | ok: bloqueados, nada muda no disco |
+| 6 — renomear `frontend/util` para `api` | ok: `[[api]]` vira `[[backend/api]]` |
+| 7, C3 — só maiúsculas | ok: `Deploy.md` no disco |
+| C11 — renomear de novo com `infra` aberta | **falhou**: o link `[[deploy]]` ficava para trás. Causa: em desenvolvimento o React abre o vault duas vezes (StrictMode) e o vault da primeira abertura continuava observando a pasta, com um registro de escritas antigo, e devolvia a grafia antiga ao índice. Corrigido: a abertura mais antiga desiste, o adapter Tauri para o observador que sobe depois de fechar, e a store ignora eventos de um vault que não é o atual. Depois: ok |
+| 8, C4 — mover nota e pasta | ok |
+| 10 — excluir pasta | ok: "2 notas irão para a lixeira do sistema."; pasta na Lixeira |
+| 12b — gravação por fora ~900 ms depois de digitar | ok: diálogo de conflito; disco intacto até a escolha |
+| 13 — excluir por fora a nota aberta com edição | ok: "Recriar com este conteúdo" regrava |
+| 15 — tema do sistema | ok (emulado pelo protocolo de depuração) |
+| C8 — renomear a pasta do vault com o app aberto | **falhou**: no Windows o observador não avisa quando a própria raiz muda de nome. Corrigido: o adapter confere a raiz a cada 2 s e ao voltar o foco. Depois: detectado em 2,4 s |
+| C10 — último vault sumiu | ok (reabertura simulada recarregando a janela) |
+
 Ainda não verificado:
 
-- Passos 5–8, 10, 12b, 13, 14 e 15 e os casos C2–C4, C8–C11 no app desktop
-  (cobertos no adapter de memória pelo `pnpm test` e pelo e2e, mas não
-  repetidos à mão no Tauri).
+- Passo 14 (Linux sem lixeira).
 - macOS e Linux: nenhum passo foi executado. A conferência do método
   `NsFileManager` da lixeira no macOS (research R6) depende de uma máquina
   macOS; o nome da API foi confirmado no código do crate `trash` 5.2.9.

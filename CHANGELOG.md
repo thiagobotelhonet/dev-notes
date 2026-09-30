@@ -16,3 +16,10 @@
   estados do link, seguir link, criar nota pelo link pendente, autocomplete
   e incorporação `![[nota]]`. Primeiro dado do app no vault:
   `.devnotes/deleted-notes.json` (ADR-009).
+- Correções da validação no app desktop (Windows): abrir o vault duas vezes
+  seguidas não deixa mais um observador de arquivos órfão (links voltavam a
+  ficar ambíguos depois de renomear); renomear a pasta do vault com o app
+  aberto passa a ser detectado; mudanças externas em lote são tratadas de uma
+  vez; menu "…" da árvore mais largo; bloco `![[nota#Seção]]` mantém o nome da
+  seção quando a nota não existe.
+- `pnpm dev` e `pnpm dev:mock` passam a usar a porta 5000.

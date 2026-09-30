@@ -283,13 +283,19 @@ export function createMemoryVaultSession(
         lastOpenedAt: new Date().toISOString(),
       }
       lastOpened = ref
+      /* Each open vault removes only its own listeners on close, as on Tauri. */
+      const own = new Set<(changes: ExternalChange[]) => void>()
       const vault: OpenVault = {
         ref,
         storage,
         watcher: {
           subscribe(listener) {
             listeners.add(listener)
-            return () => listeners.delete(listener)
+            own.add(listener)
+            return () => {
+              listeners.delete(listener)
+              own.delete(listener)
+            }
           },
         },
         trash,
@@ -299,7 +305,8 @@ export function createMemoryVaultSession(
           return () => beforeClose.delete(task)
         },
         async close() {
-          listeners.clear()
+          for (const listener of own) listeners.delete(listener)
+          own.clear()
         },
       }
       return vault

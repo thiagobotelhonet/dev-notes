@@ -8,8 +8,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "vite --port 3000",
-    "dev:mock": "vite --port 3000 --mode mock",
+    "dev": "vite --port 5000",
+    "dev:mock": "vite --port 5000 --mode mock",
     "build": "vite build && node scripts/check-build.mjs",
     "preview": "vite preview --port 4173",
     "tauri": "tauri",

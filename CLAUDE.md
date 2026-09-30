@@ -9,7 +9,7 @@ da verdade.
 
 | Comando | O que faz |
 |---|---|
-| `pnpm dev` | só o front na porta 3000; fora do Tauri mostra "precisa rodar como app desktop" |
+| `pnpm dev` | só o front na porta 5000; fora do Tauri mostra "precisa rodar como app desktop" |
 | `pnpm dev:mock` | o front com um vault de demonstração em memória (`src/mocks/`) |
 | `pnpm tauri dev` | o app desktop de verdade, contra uma pasta do disco |
 | `pnpm build` | gera `dist/` e confere que a simulação e recursos de rede ficaram de fora |

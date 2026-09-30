@@ -22,7 +22,7 @@ export type LinkTarget =
   | { state: "pending"; path: VaultPath }
 
 /** `#Heading` becomes "Heading"; `#^block` opens the whole note. */
-function headingOf(subpath: string) {
+export function linkHeading(subpath: string) {
   if (!subpath.startsWith("#") || subpath.startsWith("#^")) return undefined
   return subpath.slice(1).trim() || undefined
 }
@@ -42,7 +42,7 @@ export function resolveLinkTarget({
   deleted: DeletedNotes
 }): LinkTarget {
   const resolution = index.resolve(link)
-  const heading = headingOf(link.subpath)
+  const heading = linkHeading(link.subpath)
   if (resolution.status === "resolved")
     return heading
       ? { state: "valid", path: resolution.path, heading }

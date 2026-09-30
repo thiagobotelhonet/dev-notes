@@ -21,5 +21,6 @@ export { suggestLinks } from "./model/links.suggest"
 export {
   type LinkState,
   type LinkTarget,
+  linkHeading,
   resolveLinkTarget,
 } from "./model/links.target"

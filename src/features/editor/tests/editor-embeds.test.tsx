@@ -107,6 +107,9 @@ describe("incorporação no editor", () => {
     await expect
       .poll(() => screen.queryAllByText("Nota não encontrada: checklist"))
       .toHaveLength(2)
+    expect(await block("checklist › Antes do deploy")).toHaveTextContent(
+      "Nota não encontrada: checklist"
+    )
     expect(note().buffer).toBe(runbook)
     await act(() => vault().recreateNote("checklist.md"))
     await expect

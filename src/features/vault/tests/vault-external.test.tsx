@@ -1,5 +1,6 @@
 import { act } from "@testing-library/react"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { OpenVault } from "@/shared/vault"
 import {
   createMemoryVaultSession,
   type MemoryVaultSession,
@@ -84,5 +85,26 @@ describe("mudanças feitas fora do app", () => {
   it("raiz do vault removida com o app aberto deixa o vault indisponível", async () => {
     await act(() => memory.simulateExternal({ kind: "removed", path: "" }))
     await expect.poll(() => store().status).toBe("unavailable")
+  })
+})
+
+describe("abrir o vault duas vezes ao mesmo tempo", () => {
+  it("a abertura mais antiga é fechada e só o vault atual trata mudanças externas", async () => {
+    const opened: OpenVault[] = []
+    const open = memory.open.bind(memory)
+    memory.open = async (root) => {
+      const vault = await open(root)
+      vi.spyOn(vault, "close")
+      opened.push(vault)
+      return vault
+    }
+    await Promise.all([store().restore(memory), store().restore(memory)])
+    await waitForIndex()
+    const stillOpen = opened.filter(
+      (vault) => vi.mocked(vault.close).mock.calls.length === 0
+    )
+    expect(stillOpen).toEqual([store().vault])
+    await external("created", "nova.md", "[[deploy]]")
+    await expect.poll(paths).toContain("nova.md")
   })
 })

@@ -61,7 +61,7 @@ function ActionMenus({
     <>
       <ContextMenu>
         <ContextMenuTrigger render={<div />}>{children}</ContextMenuTrigger>
-        <ContextMenuContent>
+        <ContextMenuContent className="min-w-56">
           {actions.map((action) => (
             <ContextMenuItem key={action.label} onClick={action.onSelect}>
               {action.label}
@@ -82,7 +82,12 @@ function ActionMenus({
         >
           <MoreHorizontalIcon aria-hidden="true" />
         </SidebarMenuAction>
-        <DropdownMenuContent side="right" align="start">
+        {/* The trigger is tiny; the menu must not take its width. */}
+        <DropdownMenuContent
+          side="right"
+          align="start"
+          className="w-auto min-w-56"
+        >
           {actions.map((action) => (
             <DropdownMenuItem key={action.label} onClick={action.onSelect}>
               {action.label}
