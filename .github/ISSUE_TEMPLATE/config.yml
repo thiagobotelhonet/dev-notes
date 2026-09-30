@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Padrões de código
+    url: https://github.com/thiagocorreanet/react-standards-template/blob/main/docs/standards.md
+    about: As regras, cada uma com código, nível e motivo. Leia antes de abrir uma issue sobre convenção.
+  - name: Decisões de arquitetura
+    url: https://github.com/thiagocorreanet/react-standards-template/blob/main/docs/decisions
+    about: Por que cada regra grande existe. Discordar de uma decisão começa pelo arquivo dela.

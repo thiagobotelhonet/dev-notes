@@ -1,0 +1,51 @@
+name: Defeito
+description: Algo não funciona como a documentação descreve.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: O que acontece
+      description: O que você esperava e o que veio no lugar.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Os comandos, na ordem, a partir de um clone limpo.
+      placeholder: |
+        pnpm install --frozen-lockfile
+        pnpm dev:mock
+        ...
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Modo
+      options:
+        - Simulação (pnpm dev:mock)
+        - App desktop (pnpm tauri dev ou instalado)
+        - Build (pnpm build ou pnpm preview)
+    validations:
+      required: true
+
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versões
+      description: Saída de `node --version`, `pnpm --version` e o sistema operacional.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Saída do comando
+      description: O erro inteiro, não só a última linha.
+      render: shell

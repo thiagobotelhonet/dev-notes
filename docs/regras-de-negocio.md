@@ -61,8 +61,8 @@ Stack e decisões técnicas (framework, empacotamento desktop, bibliotecas, form
 | Nota | Arquivo `.md` dentro do vault | Cartão de texto do canvas |
 | Link interno | Referência a outra nota no formato `[[nome]]` ou `[[pasta/nome]]` | Link web (URL) |
 | Backlink | Lista de notas que apontam para a nota atual | Link interno |
-| Link pendente | Link para nota que ainda não existe | Link quebrado |
-| Link quebrado | Link para nota que existia e foi excluída | Link pendente |
+| Link pendente | Link para nota que ainda não existe; seguir o link cria a nota | Link quebrado |
+| Link quebrado | Link para nota que existia e foi excluída; o app lembra a exclusão num registro de notas excluídas (`.devnotes/deleted-notes.json`), que guarda só caminhos e pode ser apagado sem perda | Link pendente |
 | Incorporação | Exibição do conteúdo de uma nota dentro de outra (`![[nota]]`) | Cópia do conteúdo |
 | Canvas | Quadro infinito com cartões ligados por setas, salvo como arquivo no vault | Nota |
 | Cartão | Elemento do canvas: referência a uma nota ou texto livre | Nota |
@@ -379,6 +379,13 @@ DADO que existe a nota `deploy`
 QUANDO o usuário pede para excluí-la e não confirma
 ENTÃO nada é alterado
 
+**CA-NOTA-001-03 — Lixeira indisponível** (Exceção · RN-NOTA-001 · spec 001)
+DADO que a lixeira do sistema não está disponível
+QUANDO o usuário pede para excluir a nota `deploy`
+ENTÃO a exclusão é bloqueada
+E o app avisa que a lixeira não está disponível e que a nota pode ser excluída pelo gerenciador de arquivos
+E a nota continua no vault
+
 **CA-NOTA-003-01 — Link quebrado** (Positivo · RN-NOTA-003)
 DADO que a nota `infra` contém `[[deploy]]`
 QUANDO `deploy` é excluída
@@ -404,6 +411,122 @@ ENTÃO os links antigos passam a `[[backend/api]]` e continuam apontando para a 
 DADO que `[[ideia nova]]` aparece com aparência de link pendente
 QUANDO o usuário clica nele
 ENTÃO a nota `ideia nova` é criada e aberta
+
+**CA-LINK-001-02 — Link pendente com pasta** (Positivo · RN-LINK-001 · spec 002)
+DADO que `infra` contém `[[runbooks/rollback]]` e a pasta `runbooks/` não existe
+QUANDO o usuário segue o link
+ENTÃO a pasta `runbooks/` e a nota `rollback` dentro dela são criadas, e a nota é aberta
+
+**CA-LINK-001-03 — Nome inválido** (Negativo · RN-LINK-001 · spec 002)
+DADO que `infra` contém `[[a:b]]`
+QUANDO o usuário segue o link
+ENTÃO nenhuma nota é criada
+E o app avisa que o nome é inválido e por quê
+
+**CA-LINK-001-04 — Link pendente sem pasta** (Positivo · RN-LINK-001 · spec 002)
+DADO que `backend/infra` contém `[[ideia nova]]`
+QUANDO o usuário segue o link
+ENTÃO a nota nasce em `backend/ideia nova`, na mesma pasta da nota que contém o link, e é aberta
+
+**CA-LINK-002-01 — Aparência de link pendente** (Positivo · RN-LINK-002 · spec 002)
+DADO que `infra` contém `[[deploy]]` e `[[ideia nova]]`, e só `deploy` existe
+QUANDO `infra` é aberta
+ENTÃO `[[ideia nova]]` aparece com aparência de link pendente, diferente de `[[deploy]]`
+E a diferença não depende só de cor
+
+**CA-LINK-002-02 — Aparência de link quebrado** (Positivo · RN-LINK-002, RN-NOTA-003 · spec 002)
+DADO que `infra` contém `[[deploy]]`
+QUANDO `deploy` é excluída pelo app
+ENTÃO `[[deploy]]` continua no texto e passa a aparecer como link quebrado, diferente de link pendente e de link válido
+
+**CA-LINK-002-03 — Link quebrado sobrevive ao reabrir o app** (Positivo · RN-LINK-002 · spec 002)
+DADO que `deploy` foi excluída e `infra` contém `[[deploy]]`
+QUANDO o app é fechado e aberto de novo
+ENTÃO `[[deploy]]` continua aparecendo como link quebrado, não como pendente
+
+**CA-LINK-002-04 — Seguir link quebrado** (Alternativo · RN-LINK-002, RN-NOTA-003 · spec 002)
+DADO que `[[deploy]]` aparece como link quebrado
+QUANDO o usuário segue o link
+ENTÃO o app avisa que a nota foi excluída e pode ser restaurada pela lixeira do sistema, e oferece recriá-la vazia
+E nada é criado sem a escolha
+
+**CA-LINK-002-05 — Nota restaurada** (Positivo · RN-LINK-002 · spec 002)
+DADO que `[[deploy]]` aparece como link quebrado
+QUANDO `deploy` volta ao vault (restaurada pela lixeira ou recriada)
+ENTÃO o link volta a aparecer como válido
+
+**CA-LINK-003-01 — Link ambíguo** (Alternativo · RN-LINK-003, 004 · spec 002)
+DADO que existem `backend/util` e `frontend/util` e `infra` contém `[[util]]`
+QUANDO `infra` é aberta
+ENTÃO `[[util]]` aparece com aparência de link ambíguo, diferente de válido e de pendente
+
+**CA-LINK-003-02 — Seguir link ambíguo** (Alternativo · RN-LINK-003, 004 · spec 002)
+DADO que existem `backend/util` e `frontend/util` e `infra` contém `[[util]]`
+QUANDO o usuário segue `[[util]]`
+ENTÃO o app mostra as duas notas para ele escolher qual abrir
+E nenhuma nota é aberta nem criada sem a escolha
+
+**CA-LINK-004-01 — Seguir link** (Positivo · RN-LINK-004 · spec 002)
+DADO que `infra` contém `[[deploy]]` e a nota `deploy` existe
+QUANDO o usuário segue o link
+ENTÃO a nota `deploy` é aberta
+
+**CA-LINK-004-02 — Seguir link com pasta** (Positivo · RN-LINK-004 · spec 002)
+DADO que existem `backend/api` e `frontend/api` e `infra` contém `[[backend/api]]`
+QUANDO o usuário segue o link
+ENTÃO a nota `backend/api` é aberta
+
+**CA-LINK-004-03 — Seguir link para seção** (Positivo · RN-LINK-004 · spec 002)
+DADO que `infra` contém `[[deploy#Rollback]]` e `deploy` tem o título "Rollback"
+QUANDO o usuário segue o link
+ENTÃO `deploy` é aberta posicionada no título "Rollback"
+
+**CA-LINK-005-01 — Autocomplete com nome único** (Positivo · RN-LINK-004, 005 · spec 002)
+DADO que `deploy` é a única nota com esse nome
+QUANDO o usuário digita `[[depl` e escolhe `deploy` na lista
+ENTÃO o texto fica `[[deploy]]`
+
+**CA-LINK-005-02 — Autocomplete com nome repetido** (Positivo · RN-LINK-004, 005 · spec 002)
+DADO que existem `backend/api` e `frontend/api`
+QUANDO o usuário digita `[[api` e escolhe a nota de `backend/`
+ENTÃO o texto fica `[[backend/api]]`
+
+**CA-LINK-005-03 — Sugestão mostra a pasta** (Positivo · RN-LINK-005 · spec 002)
+DADO que existem `backend/api` e `frontend/api`
+QUANDO o usuário digita `[[api`
+ENTÃO as duas aparecem na lista, cada uma com a sua pasta visível
+
+**CA-LINK-005-04 — Ordem das sugestões** (Positivo · RN-LINK-005 · spec 002)
+DADO que existem `api` (editada ontem), `api-gateway` (editada hoje), `rapid-api` e `backend/servicos/leia-me`
+QUANDO o usuário digita `[[api`
+ENTÃO a lista mostra `api-gateway`, `api`, `rapid-api` nessa ordem
+E `backend/servicos/leia-me` não aparece
+
+**CA-LINK-005-05 — Link para nota que não existe** (Alternativo · RN-LINK-001, 005 · spec 002)
+DADO que nenhuma nota se chama `ideia nova`
+QUANDO o usuário digita `[[ideia nova]]` sem escolher sugestão
+ENTÃO o texto fica como foi digitado e o link aparece como pendente
+
+**CA-EMBED-001-01 — Incorporação mostra o conteúdo** (Positivo · RN-EMBED-001 · spec 002)
+DADO que `runbook` contém `![[checklist]]` e `checklist` existe
+QUANDO `runbook` é aberta
+ENTÃO o conteúdo de `checklist` aparece num bloco logo abaixo da linha `![[checklist]]`, que continua visível
+
+**CA-EMBED-001-02 — Incorporação acompanha a original** (Positivo · RN-EMBED-001 · spec 002)
+DADO que `runbook` está aberta e incorpora `checklist`
+QUANDO `checklist` é alterada (pelo app ou por outra ferramenta)
+ENTÃO a incorporação passa a mostrar o conteúdo novo sem reabrir `runbook`
+
+**CA-EMBED-001-03 — Incorporar uma seção** (Positivo · RN-EMBED-001 · spec 002)
+DADO que `runbook` contém `![[checklist#Antes do deploy]]`
+QUANDO `runbook` é aberta
+ENTÃO só a seção "Antes do deploy" de `checklist` aparece
+
+**CA-EMBED-002-01 — Nota não encontrada** (Negativo · RN-EMBED-002 · spec 002)
+DADO que `runbook` contém `![[checklist]]`
+QUANDO `checklist` é excluída ou não existe
+ENTÃO a incorporação mostra "nota não encontrada"
+E o texto `![[checklist]]` permanece em `runbook`
 
 **CA-EMBED-003-01 — Incorporação circular** (Negativo · RN-EMBED-003)
 DADO que A incorpora B e B incorpora A
@@ -432,10 +555,31 @@ QUANDO outra ferramenta altera o arquivo
 ENTÃO o app avisa o usuário
 E o usuário escolhe manter a versão do app ou a versão externa
 
+**CA-NOTA-009-01 — Excluir pasta** (Positivo · RN-NOTA-009 · spec 001)
+DADO que a pasta `rascunhos/` contém 3 notas
+QUANDO o usuário pede para excluí-la
+ENTÃO a confirmação informa que 3 notas serão excluídas
+E, ao confirmar, a pasta inteira vai para a lixeira do sistema
+
+**CA-NOTA-009-02 — Excluir pasta cancelado** (Negativo · RN-NOTA-009 · spec 001)
+DADO que a pasta `rascunhos/` contém 3 notas
+QUANDO o usuário pede para excluí-la e não confirma
+ENTÃO nada é alterado
+
 **CA-NOTA-010-01 — Mover atualiza links** (Positivo · RN-NOTA-010)
 DADO que `infra` contém `[[backend/api]]`
 QUANDO `backend/api` é movida para `servicos/`
 ENTÃO o link em `infra` passa a apontar para a nota em `servicos/`
+
+**CA-NOTA-010-02 — Mover atualiza cartões do canvas** (Positivo · RN-NOTA-010 · spec 001)
+DADO que um canvas tem cartão da nota `backend/api`
+QUANDO a nota é movida para `servicos/`
+ENTÃO o cartão aponta para `servicos/api`
+
+**CA-NOTA-010-03 — Mover nota de nome único** (Alternativo · RN-NOTA-010, RN-LINK-004 · spec 001)
+DADO que `deploy` é a única nota com esse nome e `infra` contém `[[deploy]]`
+QUANDO `deploy` é movida para `runbooks/`
+ENTÃO `infra` continua contendo `[[deploy]]` e o link aponta para `runbooks/deploy`
 
 **CA-NOTA-011-01 — Mover para pasta com mesmo nome** (Negativo · RN-NOTA-011)
 DADO que `servicos/` já contém `api`
@@ -518,24 +662,30 @@ ENTÃO a outra nota não aparece como menção
 
 | Objetivo | Decisão | Regras | Fluxo | Critérios |
 | --- | --- | --- | --- | --- |
-| OBJ-PROD-001 | DEC-PROD-010 | RN-NOTA-001, 002, 003, 009 | FL-NOTA-002 | CA-NOTA-001-01/02, CA-NOTA-003-01 |
+| OBJ-PROD-001 | DEC-PROD-010 | RN-NOTA-001, 002, 003, 009 | FL-NOTA-002 | CA-NOTA-001-01/02/03, CA-NOTA-003-01, CA-NOTA-009-01/02 |
 | OBJ-PROD-001 | DEC-PROD-014 | RN-NOTA-004, 005, 006, RN-LINK-006 | FL-NOTA-001 | CA-NOTA-004-01, CA-NOTA-006-01, CA-LINK-006-01 |
-| OBJ-PROD-001 | DEC-PROD-011, 012 | RN-LINK-001 a 005 | — | CA-LINK-001-01 |
+| OBJ-PROD-001 | DEC-PROD-011, 012 | RN-LINK-001 a 005 | — | CA-LINK-001-01/02/03/04, CA-LINK-002-01 a 05, CA-LINK-003-01/02, CA-LINK-004-01/02/03, CA-LINK-005-01 a 05 |
 | OBJ-PROD-001 | DEC-PROD-013 | RN-NOTA-007, 008 | FL-NOTA-003 | CA-NOTA-007-01, CA-NOTA-008-01 |
-| OBJ-PROD-001 | DEC-PROD-006, 020, 021 | RN-EMBED-*, RN-TAG-*, RN-PROP-*, RN-DIARIO-*, RN-HIST-* | — | CA-EMBED-003-01, CA-DIARIO-002-01, CA-HIST-003-01, CA-TAG-002-01/02, CA-PROP-003-01 |
+| OBJ-PROD-001 | DEC-PROD-006, 020, 021 | RN-EMBED-*, RN-TAG-*, RN-PROP-*, RN-DIARIO-*, RN-HIST-* | — | CA-EMBED-001-01/02/03, CA-EMBED-002-01, CA-EMBED-003-01, CA-DIARIO-002-01, CA-HIST-003-01, CA-TAG-002-01/02, CA-PROP-003-01 |
 | OBJ-PROD-001 | DEC-PROD-005 | RN-CANVAS-* | — | CA-CANVAS-001-01, CA-CANVAS-002-01 |
 | OBJ-PROD-001 | DEC-PROD-015 | RN-BUSCA-* | — | CA-BUSCA-002-01, CA-BUSCA-003-01, CA-BUSCA-004-01 |
 | OBJ-PROD-001 | DEC-PROD-016 | RN-BACK-* | — | CA-BACK-002-01, CA-BACK-003-01 |
 | OBJ-PROD-002 | DEC-PROD-017 | RN-UI-* | — | — |
 | OBJ-PROD-002 | DEC-PROD-009 | RN-SNIPPET-* | — | CA-SNIPPET-002-01 |
 | OBJ-PROD-001 | DEC-PROD-018 | RN-TEMPLATE-001, 003 | — | — |
-| OBJ-PROD-001 | DEC-PROD-019 | RN-NOTA-010, 011, 012 | — | CA-NOTA-010-01, CA-NOTA-011-01 |
+| OBJ-PROD-001 | DEC-PROD-019 | RN-NOTA-010, 011, 012 | — | CA-NOTA-010-01/02/03, CA-NOTA-011-01 |
 
 ---
 
 ## 12. Pendências
 
-Nenhuma lacuna de regra de negócio aberta para o MVP.
+Pontos levantados pela spec 001 (`specs/001-vault-notas/`) para o responsável
+pelo produto decidir. As regras continuam como estão até a decisão.
+
+| Item | Situação |
+| --- | --- |
+| RN-NOTA-012 — mover sozinho não muda o nome da nota, então não consegue tornar um nome repetido no vault; a regra só se aplica quando mover e renomear acontecem na mesma operação | A decidir: manter como está, fundir com a RN-LINK-006 ou reescrever |
+| RN-NOTA-009 fala em enviar "todas as notas" da pasta para a lixeira; a spec 001 (FR-010) envia a pasta inteira, inclusive canvas e outros arquivos, e a confirmação informa as duas quantidades | A decidir: ajustar o texto da RN-NOTA-009 para "a pasta inteira" |
 
 Pendências do projeto fora deste documento:
 

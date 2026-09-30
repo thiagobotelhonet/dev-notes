@@ -1,0 +1,160 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Por que um job só para classificar: `paths` no `on:` faria os jobs caros
+  # sumirem numa PR de documentação, e o check obrigatório sumiria junto, com
+  # a PR esperando para sempre por algo que nunca vai rodar. Aqui os jobs
+  # caros são pulados e `verify` continua existindo para aprovar a PR.
+  code_paths:
+    name: classifica o diff
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # O merge-base precisa do histórico, mas não do conteúdo antigo de
+          # cada arquivo; `blob:none` busca os poucos blobs usados na hora.
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Valor vindo do evento entra por variável de ambiente, nunca
+      # interpolado dentro da linha de comando (AMB-01 vale para o CI também).
+      - id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/detect-code-changes.mjs "$BASE_SHA" "$HEAD_SHA"
+
+  # Roda em tudo, inclusive em PR de documentação, e não instala nada.
+  links:
+    name: links do Markdown
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: node .github/scripts/check-markdown-links.mjs
+
+  # Os mesmos passos do `pnpm verify`, separados: quando falha, o nome do
+  # passo já diz o que quebrou, sem abrir o log.
+  quality:
+    name: lint, tipos, testes e build
+    needs: [code_paths]
+    if: needs.code_paths.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-node-dependencies
+      - name: Biome
+        run: pnpm check
+      - name: TypeScript
+        run: pnpm typecheck
+      - name: Testes de unidade, componente e contrato
+        run: pnpm test
+      - name: Build, sem simulação
+        run: pnpm build
+
+      # Os alertas do Dependabot avisam depois do merge; este passo recusa a
+      # dependência vulnerável antes. `high` e acima trava; abaixo disso a
+      # decisão fica com a PR do Dependabot, que chega com contexto.
+      - name: Auditoria das dependências
+        run: pnpm audit --audit-level=high
+
+  # Em job separado para correr junto com o anterior, em vez de esperar o
+  # build: é o mais demorado dos dois.
+  e2e:
+    name: jornada no navegador
+    needs: [code_paths]
+    if: needs.code_paths.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-node-dependencies
+
+      - id: playwright
+        name: Descobrir a versão do Playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - id: browser-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Instalar o Chromium
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      # O cache guarda o navegador, não os pacotes de sistema que ele usa;
+      # esses precisam voltar a cada máquina nova.
+      - name: Instalar as dependências de sistema do Chromium
+        if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/
+          retention-days: 7
+
+  # O único check que vale exigir na proteção do branch: os outros podem ser
+  # pulados de propósito, e "pulado" não pode passar por "aprovado".
+  verify:
+    name: verify
+    if: always()
+    needs: [code_paths, links, quality, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Conferir o resultado de cada job
+        env:
+          CODE_PATHS: ${{ needs.code_paths.result }}
+          LINKS: ${{ needs.links.result }}
+          QUALITY: ${{ needs.quality.result }}
+          E2E: ${{ needs.e2e.result }}
+          CODE: ${{ needs.code_paths.outputs.code }}
+        run: |
+          set -euo pipefail
+          failed=0
+          require() {
+            if [ "$2" != "$3" ]; then
+              echo "$1: esperado $3, veio $2"
+              failed=1
+            fi
+          }
+          require code_paths "$CODE_PATHS" success
+          require links "$LINKS" success
+          if [ "$CODE" = "true" ]; then
+            require quality "$QUALITY" success
+            require e2e "$E2E" success
+          else
+            echo "Mudança só de texto: os jobs de código foram pulados."
+            require quality "$QUALITY" skipped
+            require e2e "$E2E" skipped
+          fi
+          exit "$failed"

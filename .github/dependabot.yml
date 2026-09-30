@@ -1,0 +1,35 @@
+version: 2
+
+updates:
+  # As actions são o alvo mais fácil da cadeia: rodam com o `GITHUB_TOKEN` do
+  # repositório e quase ninguém as atualiza. Como os workflows daqui prendem
+  # cada action por SHA, é o Dependabot que traz o SHA novo junto com a versão
+  # a que ele corresponde.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "Atualiza"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Atualiza"
+    groups:
+      # Uma PR por grupo em vez de uma por pacote. Atualização de segurança
+      # continua vindo separada e na hora, sem esperar a segunda-feira.
+      producao:
+        dependency-type: production
+        update-types: [minor, patch]
+      desenvolvimento:
+        dependency-type: development
+        update-types: [minor, patch]

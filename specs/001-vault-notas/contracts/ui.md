@@ -50,9 +50,9 @@ por props; a lógica fica nas features.
 | Ação | Onde | Atalho visível (`Kbd`, LAY-06) |
 | --- | --- | --- |
 | Nova nota | Pasta, raiz | `Ctrl+N` (na pasta selecionada) |
-| Nova pasta | Pasta, raiz | — |
+| Nova pasta | Pasta, raiz | `Ctrl+Shift+N` |
 | Renomear | Nota, pasta | `F2` |
-| Mover para… | Nota, pasta | — |
+| Mover para… | Nota, pasta | `Ctrl+Shift+M` |
 | Excluir | Nota, pasta | `Delete` |
 
 - **Renomear**: edição inline com `Input` no próprio item; `Enter` confirma, `Esc` cancela.
@@ -74,11 +74,13 @@ por props; a lógica fica nas features.
 | Atualização parcial (FR-020) | `toast.error` com lista | "{n} arquivos não foram atualizados: {lista}." |
 | Conflito externo (FR-022) | `app-choice-dialog` | Título "“{nome}” foi alterada fora do Dev Notes" · Descrição "Você tem alterações que ainda não foram gravadas." · Ações "Manter minha versão" / "Usar versão do arquivo" |
 
-Um único `<Toaster>` na raiz do app (CMP-09).
+Um único `<Toaster>` na raiz do app (CMP-09), importado de `sonner` como no template, com o tema
+vindo dos tokens do bloco `[data-sonner-toaster]` do `styles.css`.
 
 ## Acessibilidade
 
 - Todo botão só com ícone tem nome acessível (CMP-10).
 - Indicador de edição pendente: ícone + texto "Não gravado" (sr-only quando compacto), não só cor
   (CMP-08).
-- A árvore é navegável por teclado (setas, `Enter` abre, `F2`, `Delete`).
+- A árvore é navegável por teclado (setas, `Enter` abre, `Ctrl+N`, `Ctrl+Shift+N`, `F2`,
+  `Ctrl+Shift+M`, `Delete`).

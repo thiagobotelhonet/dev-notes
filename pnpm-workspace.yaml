@@ -1,0 +1,20 @@
+packages: []
+
+# Espera um dia antes de considerar uma versão recém-publicada. Quase todo
+# pacote comprometido é descoberto e despublicado em horas; esta espera é o
+# que separa "atualizei na hora errada" de "não atualizei". Não afeta
+# instalação com lockfile, onde a versão já está decidida.
+minimumReleaseAge: 1440
+
+# Sem esta linha o pnpm trata a espera como erro duro em vez de cair para a
+# versão anterior. O Dependabot re-resolve a árvore inteira a cada dependência,
+# então um único pacote transitivo dentro da janela derruba a atualização de
+# todos. O pnpm 10.33 daqui ainda não conhece a chave e a ignora; quem a lê é o
+# pnpm mais novo que o Dependabot usa.
+minimumReleaseAgeStrict: false
+
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+  unrs-resolver: true
+  msw: false

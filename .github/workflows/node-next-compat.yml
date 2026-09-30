@@ -1,0 +1,47 @@
+name: Node next compatibility
+
+# Por que agendado e não em cada PR: a faixa suportada é o `.node-version`, e
+# a suíte já roda nela. O que esta execução responde é outra pergunta, que não
+# tem pressa: a próxima versão do Node quebra o template? Saber com semanas de
+# antecedência evita descobrir no dia em que alguém atualiza a máquina.
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      node-version:
+        description: "Versão do Node a testar. Vazio usa a mais recente."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-next-compat
+  cancel-in-progress: true
+
+jobs:
+  compat:
+    name: suíte na próxima versão do Node
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          # `latest` é a versão mais nova publicada, seja ela qual for. Fixar
+          # um número aqui faria o teste envelhecer sozinho.
+          node-version: ${{ inputs.node-version || 'latest' }}
+
+      - name: Versões em uso
+        run: |
+          node --version
+          pnpm --version
+
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

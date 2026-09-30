@@ -1,0 +1,30 @@
+name: Proposta
+description: Uma mudança no template ou numa regra.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: O problema
+      description: O que dói hoje, num projeto real. Proposta sem problema concreto costuma virar regra que ninguém segue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: A proposta
+    validations:
+      required: true
+
+  - type: input
+    id: rule
+    attributes:
+      label: Regra afetada
+      description: Código da regra ou arquivo de decisão, quando a proposta mexe numa que já existe.
+      placeholder: CMP-02, ou docs/decisions/0013-shared-vault-adapters.md
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: O que você considerou e descartou

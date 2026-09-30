@@ -1,0 +1,43 @@
+name: CodeQL
+
+# Análise estática de segurança do GitHub. Gratuita em repositório público, e
+# só lá: num repositório privado sem GitHub Advanced Security ela falha. Como
+# a pasta `.github` inteira vai junto nas cópias geradas, o job confere a
+# visibilidade e se recolhe sozinho onde não pode rodar, em vez de nascer
+# vermelho no repositório de quem usou o template.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: analisar JavaScript e TypeScript
+    if: github.event.repository.visibility == 'public'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          languages: javascript-typescript
+          # `security-and-quality` acha mais que o conjunto padrão e ainda é
+          # gratuito; o custo é ruído, que num projeto deste tamanho é pouco.
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          category: /language:javascript-typescript

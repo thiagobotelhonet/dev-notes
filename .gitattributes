@@ -1,0 +1,5 @@
+# O Biome formata com LF. O git no Windows costuma vir com
+# `core.autocrlf=true`, e sem esta linha o clone de lá troca o fim de linha de
+# todo arquivo: `pnpm check` reprova o repositório inteiro por formatação, sem
+# ninguém ter escrito nada. `text=auto` continua detectando binário sozinho.
+* text=auto eol=lf

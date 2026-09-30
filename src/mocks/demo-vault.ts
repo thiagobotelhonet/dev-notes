@@ -1,0 +1,72 @@
+import type { VaultPath } from "@/shared/vault"
+
+/** Demo vault of `pnpm dev:mock` and Playwright (quickstart §4 of specs 001 and 002). */
+export const demoVault: Record<VaultPath, string> = {
+  "infra.md": [
+    "# Infra",
+    "",
+    "Deploy: [[deploy]]",
+    "API: [[backend/api]]",
+    "Rollback: [[deploy#Rollback]]",
+    "Pendente: [[ideia nova]]",
+    "Repetido: [[util]]",
+    "Canvas: [[mapa.canvas]]",
+    "",
+  ].join("\n"),
+  "deploy.md": [
+    "# Deploy",
+    "",
+    "Passo a passo do deploy.",
+    "",
+    "## Rollback",
+    "",
+    "Voltar para a versão anterior.",
+    "",
+  ].join("\n"),
+  "runbook.md": [
+    "# Runbook",
+    "",
+    "![[checklist]]",
+    "",
+    "Só a primeira parte:",
+    "",
+    "![[checklist#Antes do deploy]]",
+    "",
+  ].join("\n"),
+  "checklist.md": [
+    "# Checklist",
+    "",
+    "## Antes do deploy",
+    "",
+    "- testes verdes",
+    "",
+    "## Depois",
+    "",
+    "- avisar o time",
+    "",
+  ].join("\n"),
+  "a.md": "# A\n\n![[b]]\n",
+  "b.md": "# B\n\n![[a]]\n",
+  "mapa.canvas": JSON.stringify(
+    {
+      nodes: [
+        {
+          id: "n1",
+          type: "file",
+          file: "deploy.md",
+          x: 0,
+          y: 0,
+          width: 400,
+          height: 400,
+        },
+      ],
+      edges: [],
+    },
+    null,
+    "\t"
+  ),
+  "backend/api.md": "# API\n",
+  "backend/util.md": "# Util do backend\n",
+  "frontend/api.md": "# API do frontend\n",
+  "frontend/util.md": "# Util do frontend\n",
+}

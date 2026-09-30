@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env*
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.claude/settings.local.json
+src-tauri/target/
+src-tauri/gen/schemas/
+*.log

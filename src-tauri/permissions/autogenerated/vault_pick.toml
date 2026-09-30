@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-vault-pick"
+description = "Enables the vault_pick command without any pre-configured scope."
+commands.allow = ["vault_pick"]
+
+[[permission]]
+identifier = "deny-vault-pick"
+description = "Denies the vault_pick command without any pre-configured scope."
+commands.deny = ["vault_pick"]

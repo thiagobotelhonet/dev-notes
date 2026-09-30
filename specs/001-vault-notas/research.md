@@ -57,8 +57,9 @@ docs.rs, jsoncanvas.org e Microsoft Learn (links em cada item).
 - **Decision**: dois comandos Rust próprios, `vault_pick` e `vault_restore`:
   - `vault_pick` abre o seletor de pasta, libera a pasta escolhida no escopo do `fs` com
     `fs_scope().allow_directory(path, true)` e grava o caminho em `AppConfig/vault.json`;
-  - `vault_restore` roda na inicialização, lê esse arquivo e libera de novo a pasta, se ela
-    ainda existir.
+  - `vault_restore` é chamado pelo frontend na inicialização (`lastOpened`), lê esse arquivo e
+    devolve `{ root, lastOpenedAt, exists }`. Só libera a pasta de novo se ela ainda existir; se
+    não existir, a interface mostra "Não foi possível abrir o vault", igual ao adapter de memória.
 
   O frontend nunca pede ao Rust para liberar um caminho arbitrário; a liberação só acontece a
   partir da escolha do usuário ou do caminho que o próprio Rust gravou. Guardar o último vault
@@ -135,6 +136,8 @@ docs.rs, jsoncanvas.org e Microsoft Learn (links em cada item).
   - nomes reservados `CON`, `PRN`, `AUX`, `NUL`, `COM1–9`, `LPT1–9` e as variantes com
     sobrescrito, com ou sem extensão;
   - não terminar em espaço nem em ponto;
+  - não começar com ponto (o vault ignora nomes iniciados por `.`, e a nota ou pasta ficaria
+    oculta; FR-002, FR-005);
   - no máximo 255 bytes por nome.
 
   Conflito é detectado pela `nameKey` (NFC + minúsculas). A regra fica numa função pura em
@@ -219,8 +222,11 @@ docs.rs, jsoncanvas.org e Microsoft Learn (links em cada item).
 ## R14. Testes
 
 - **Decision**:
-  - **Suíte de contrato** do `shared/vault`: a mesma suíte roda contra o adapter de memória
-    sempre, e contra o Tauri num job opcional de CI desktop.
+  - **Suíte de contrato** do `shared/vault`: roda automaticamente contra o adapter de memória.
+    No adapter Tauri, a equivalência é conferida pelo `cargo test` dos comandos Rust e pelo
+    roteiro manual do quickstart §6 nos três sistemas (T090). Rodar a suíte automaticamente
+    contra o Tauri (por exemplo, com `tauri-driver` num job de CI desktop) fica como evolução
+    futura, fora desta feature.
   - **Critérios `CA-*`** viram testes Vitest em `features/*/tests/`, sobre o adapter de memória,
     com nomes que citam o ID do critério.
   - **Jornadas no Playwright** (`e2e/vault.spec.ts`): criar, renomear com links, excluir e

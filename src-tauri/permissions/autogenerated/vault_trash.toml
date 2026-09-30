@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-vault-trash"
+description = "Enables the vault_trash command without any pre-configured scope."
+commands.allow = ["vault_trash"]
+
+[[permission]]
+identifier = "deny-vault-trash"
+description = "Denies the vault_trash command without any pre-configured scope."
+commands.deny = ["vault_trash"]

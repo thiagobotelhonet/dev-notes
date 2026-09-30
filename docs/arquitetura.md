@@ -119,7 +119,7 @@ dev-notes/
 ├── src-tauri/                      # icons/ gerados com `pnpm tauri icon`
 ├── docs/
 │   ├── standards.md
-│   ├── architecture.md
+│   ├── arquitetura.md
 │   ├── regras-de-negocio.md
 │   ├── brand.md                    # identidade visual
 │   └── decisions/                  # um arquivo por decisão
@@ -182,7 +182,7 @@ Peças que montam telas inteiras levam o prefixo `app-` (CMP-04). Toda tela nova
 | `app-tabs` | Abas de nota com fechar, indicador de alteração pendente e menu | workspace, editor, canvas |
 | `app-panel` | Cabeçalho (título + ações) + `Scroll Area` + `Empty` | backlinks, histórico, propriedades, snippets, tags |
 | `app-note-list` | Lista de notas com `Item`, trecho, ícone e ação | busca, backlinks, histórico, snippets |
-| `app-confirm` | `Alert Dialog` padrão de confirmação destrutiva | excluir nota/pasta, restaurar versão |
+| `app-confirm` | `Alert Dialog` padrão de confirmação; `tone="default"` quando nada é destruído | excluir nota/pasta, restaurar versão, recriar nota excluída |
 | `app-choice-dialog` | `Alert Dialog` com duas opções nomeadas | conflito de edição externa |
 | `app-command` | `Command` em `Dialog`, com grupos e atalhos `Kbd` | paleta de comandos, busca rápida |
 | `app-empty` | `Empty` com ícone, texto e ação | vault vazio, sem resultados, painel vazio |
@@ -228,8 +228,37 @@ Ações usam `primary`; destaque e links usam `brand`. Cor nova só entra pelo `
 | `VaultStorage` | Listar, ler, escrever, renomear, mover | Plugin `fs` | Mapa em memória |
 | `FileWatcher` | Avisar mudanças externas | Plugin `fs` (watch) | Evento disparado pelo teste |
 | `Trash` | Enviar para a lixeira do sistema | Comando Rust (crate `trash`) | Lista de removidos |
+| `AppDataStore` | Ler e gravar os dados do app no vault (`.devnotes/<nome>.json`) | Comandos Rust `vault_app_data_*` | Mesmo mapa das notas, em `.devnotes/` |
 | `HistoryStore` | Versões por 30 dias | `.devnotes/history/` | Mapa em memória |
 | `SettingsStore` | Configurações e layout | `.devnotes/*.json` validados por Zod | Mapa em memória |
+
+`VaultSession` (escolher, abrir e reabrir o vault), `VaultStorage`,
+`FileWatcher` e `Trash` existem desde a spec 001
+(`specs/001-vault-notas/contracts/shared-vault.md`). A spec 002 acrescenta
+`AppDataStore` e a data de modificação de cada entrada (`VaultEntry.modifiedAt`,
+usada na ordem do autocomplete) (`specs/002-links-incorporacao/contracts/shared-vault.md`).
+`HistoryStore` e `SettingsStore` entram com as specs de histórico e de abas,
+sobre o mesmo `AppDataStore`.
+
+**Núcleo Rust** (`src-tauri/src/vault.rs`), chamado só pelo adapter Tauri:
+
+| Comando | Para quê |
+| --- | --- |
+| `vault_pick` | seletor de pasta nativo; libera a pasta no escopo do `fs` e grava o último vault |
+| `vault_restore` | lê o último vault e libera de novo a pasta, se ela ainda existir |
+| `vault_scan` | lista o vault inteiro num IPC só, sem ocultos e sem seguir links simbólicos |
+| `vault_read_notes` | lê notas em lote, com o BOM original (o `readTextFile` do plugin descarta o BOM) |
+| `vault_trash` | envia para a lixeira do sistema (crate `trash`); qualquer erro vira `trash-unavailable` |
+| `vault_app_data_read`, `vault_app_data_write` | leem e gravam `<raiz>/.devnotes/<nome>.json` (ADR-009); só nomes `^[a-z0-9-]+.json$`, nunca seguem link simbólico nem saem da raiz |
+
+Todo caminho recebido pelos comandos é validado dentro da raiz do vault
+(`resolve_in_vault`), com `cargo test`. Os dados do app usam comandos próprios
+porque, no macOS e no Linux, o escopo `raiz/**` do Tauri não cobre pastas
+iniciadas por ponto (spec 002, research R4).
+
+**Configuração global do app**: `AppConfig/vault.json` (no Windows,
+`%APPDATA%\dev.devnotes.app\vault.json`) guarda só o último vault aberto,
+fora do vault (constituição, princípio II).
 
 ---
 
@@ -244,12 +273,15 @@ meu-vault/
 │   ├── nota.md
 │   └── arquitetura.canvas
 └── .devnotes/
+    ├── deleted-notes.json  # notas excluídas: link quebrado × pendente (spec 002)
     ├── config.json
     ├── workspace.json      # abas e painéis (RN-UI-001)
     └── history/            # RN-HIST-001..003
 ```
 
-Índices de busca e de links ficam só em memória.
+Índices de busca e de links ficam só em memória. Os arquivos de `.devnotes/`
+são auxílio, nunca verdade sobre as notas: ausente ou inválido vira vazio, e
+apagar a pasta não perde nenhuma nota (ADR-009).
 
 ---
 
@@ -258,7 +290,7 @@ meu-vault/
 | Regras | Feature |
 | --- | --- |
 | RN-NOTA-001..012 | `vault` (+ `links` para atualização de links) |
-| RN-LINK-*, RN-EMBED-* | `links` |
+| RN-LINK-*, RN-EMBED-* | `links` (regra pura: estado, sugestões, seções, incorporação); `vault` segue o link e cria a nota pendente (`followLink`); `editor` destaca, sugere e mostra os blocos |
 | RN-BACK-* | `backlinks` |
 | RN-CANVAS-* | `canvas` |
 | RN-BUSCA-* | `search` |
@@ -300,17 +332,17 @@ O adapter registra cada escrita do próprio app e ignora o evento correspondente
 
 | ID | Decisão | Status | Tradeoff |
 | --- | --- | --- | --- |
-| ADR-001 | Tauri 2 como shell desktop | Proposto | Leve vs. WebView diferente por sistema |
+| ADR-001 | Tauri 2 como shell desktop | **Aceito** (`decisions/0010`) | Leve vs. WebView diferente por sistema |
 | ADR-002 | Usar o react-standards-template como base | **Aceito** | Padrão, revisão por IA e consistência vs. remover a parte HTTP/auth |
 | ADR-003 | Interface 100% shadcn (Base UI), com composições `app-*` e regras `LAY-*` | **Aceito** | Padronização e reaproveitamento vs. exemplos da comunidade usam mais Radix (`asChild`) que Base UI (`render`) |
-| ADR-004 | CodeMirror 6 como editor | Proposto | Extensível vs. API de baixo nível |
+| ADR-004 | CodeMirror 6 como editor | **Aceito** (`decisions/0011`) | Extensível vs. API de baixo nível |
 | ADR-005 | React Flow + JSON Canvas | Proposto | Pronto e compatível vs. menos liberdade visual |
-| ADR-006 | Zustand para estado de workspace | Proposto | Estado global real (abas, nota ativa, pendências) vs. exceção à regra do template de evitar store global |
+| ADR-006 | Zustand para estado de workspace | **Aceito** (`decisions/0012`) | Estado global real (abas, nota ativa, pendências) vs. exceção à regra do template de evitar store global |
 | ADR-007 | MiniSearch em memória | Proposto | Zero infraestrutura vs. peso em vaults muito grandes |
-| ADR-008 | `shared/vault` com adapters Tauri e memória | Proposto | Testes e `dev:mock` sem Tauri vs. mais interfaces |
-| ADR-009 | Dados do app em `.devnotes/` | Proposto | Vault portátil vs. pasta extra a ignorar quando houver Git |
+| ADR-008 | `shared/vault` com adapters Tauri e memória | **Aceito** (`decisions/0013`) | Testes e `dev:mock` sem Tauri vs. mais interfaces |
+| ADR-009 | Dados do app em `.devnotes/` | **Aceito** (`decisions/0015`) | Vault portátil vs. pasta extra a ignorar quando houver Git |
 | ADR-010 | Não usar Yjs no MVP | Proposto | Menos complexidade vs. integrar depois para colaboração |
-| ADR-011 | Remover TanStack Router, Query e Table | Proposto | Menos dependências vs. perder convenções herdadas (sem uso real aqui) |
+| ADR-011 | Remover TanStack Router, Query e Table | **Aceito** (`decisions/0014`) | Menos dependências vs. perder convenções herdadas (sem uso real aqui) |
 | ADR-012 | Identidade visual do `brand.md`, com `--primary` em `#2563EB` | **Aceito** | Contraste acessível (5,17:1) vs. leve diferença do azul do logo (`#3B82F6`), mantido como `--brand` |
 
 ---

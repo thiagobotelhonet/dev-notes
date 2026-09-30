@@ -60,7 +60,8 @@ guarda o último vault; índice de links só em memória. Nada é gravado em `.d
 **Testing**:
 
 - Vitest + Testing Library + `user-event`, sobre o adapter em memória.
-- Suíte de contrato de `shared/vault`, que roda contra os dois adapters.
+- Suíte de contrato de `shared/vault`, automática no adapter de memória. No adapter Tauri, a
+  mesma lista de casos é conferida à mão pelo quickstart §6 nos três sistemas (research R14).
 - Playwright no `pnpm dev:mock`.
 - `cargo test` nos comandos Rust.
 
@@ -83,7 +84,7 @@ guarda o último vault; índice de links só em memória. Nada é gravado em `.d
 **Scale/Scope**:
 
 - Um vault por vez, com até cerca de 5.000 notas.
-- 5 histórias de usuário e 24 requisitos funcionais.
+- 5 histórias de usuário e 23 requisitos funcionais ativos (FR-001 a FR-024; a FR-017 foi removida).
 - 5 composições `app-*` e 5 comandos Rust.
 
 ## Constitution Check
@@ -93,12 +94,12 @@ guarda o último vault; índice de links só em memória. Nada é gravado em `.d
 | Princípio / seção | Como o plano atende | Pré | Pós |
 | --- | --- | --- | --- |
 | **I. Local-first e offline** | Nenhuma chamada de rede. As fontes vêm de pacotes locais (`@fontsource-variable/*`) e os ícones do lucide empacotado. O último vault fica em `AppConfig`, na máquina. | ✅ | ✅ |
-| **II. Arquivos são a verdade** | O último vault fica em `AppConfig/vault.json`, a configuração global que a constituição 1.0.1 permite fora do vault. Nada é gravado em `.devnotes/` nesta feature. Quebra de linha e BOM originais são preservados ao gravar. O índice de links fica só em memória e é reconstruído ao abrir o vault. A reescrita de canvas preserva o JSON Canvas. A exclusão vai para a lixeira. Valores e links nunca são apagados. O `ChangePlan` é calculado antes de gravar e confere o hash de cada arquivo antes de reescrevê-lo. | ✅ | ✅ |
-| **III. `shared/vault`** | As features importam só de `@/shared/vault`, inclusive para o ciclo de vida da janela (`onBeforeClose`). As APIs `@tauri-apps/*` e os comandos Rust aparecem apenas em `shared/vault/adapters/tauri/`, e o Biome recebe uma regra de import restrito para cobrar isso. Adapter em memória com a mesma suíte de contrato. Ledger contra eco do observador. | ✅ | ✅ |
-| **IV. 100% shadcn** | A interface usa peças shadcn instaladas via MCP/CLI e composições `app-*`. A única exceção é o CodeMirror, dentro do `app-editor-frame`, e o motivo fica no `README.md` da feature `editor`. `ui/` nunca é editado. Composição usa `render`, nunca `asChild`. | ✅ | ✅ |
-| **V. LAY / COR** | LAY-01 (tudo dentro do `app-shell`), LAY-04 (`app-confirm`), LAY-05 (`Resizable`), LAY-06 (`Kbd` nos menus), LAY-07, LAY-08 e LAY-09. COR-01..04: tokens do `brand.md` copiados para `src/styles.css`, sem hex nem colchetes nos componentes, tema via `ThemeProvider`. | ✅ | ✅ |
+| **II. Arquivos são a verdade** | O último vault fica em `AppConfig/vault.json`, a configuração global que a constituição 1.0.1 permite fora do vault. Nada é gravado em `.devnotes/` nesta feature. Quebra de linha e BOM originais são preservados ao gravar. A gravação automática confere o hash do disco antes de gravar e, se o arquivo mudou fora do app, vai para conflito em vez de sobrescrever. O índice de links fica só em memória e é reconstruído ao abrir o vault. A reescrita de canvas preserva o JSON Canvas. A exclusão vai para a lixeira. Valores e links nunca são apagados. O `ChangePlan` é calculado antes de gravar e confere o hash de cada arquivo antes de reescrevê-lo. | ✅ | ✅ |
+| **III. `shared/vault`** | As features importam só de `@/shared/vault`, inclusive para o ciclo de vida da janela (`onBeforeClose`). As APIs `@tauri-apps/*` e os comandos Rust aparecem apenas em `shared/vault/adapters/tauri/`, e o Biome recebe uma regra de import restrito para cobrar isso. Suíte de contrato automática no adapter em memória; no Tauri, `cargo test` e os mesmos casos conferidos à mão (quickstart §6). Ledger contra eco do observador. | ✅ | ✅ |
+| **IV. 100% shadcn** | A interface usa peças shadcn instaladas via MCP/CLI e composições `app-*`. Os avisos usam o `sonner` como define a CMP-09 do template (import direto, tema pelos tokens do `styles.css`). A única exceção é o CodeMirror, dentro do `app-editor-frame`, e o motivo fica no `README.md` da feature `editor`. `ui/` nunca é editado. Composição usa `render`, nunca `asChild`. | ✅ | ✅ |
+| **V. LAY / COR** | LAY-01 (tudo dentro do `app-shell`), LAY-04 (`app-confirm`), LAY-05 (`Resizable`), LAY-06 (todo comando do explorador tem atalho e `Kbd` no menu), LAY-07, LAY-08 e LAY-09. COR-01..04: tokens do `brand.md` copiados para `src/styles.css`, sem hex nem colchetes nos componentes, tema via `ThemeProvider`. | ✅ | ✅ |
 | Restrições técnicas | Stack da `arquitetura.md` §2 e padrões herdados do template (R1). Os ADRs em status Proposto usados aqui (001, 004, 006, 008, 011) são confirmados por esta feature. | ✅ | ✅ |
-| Fluxo e portões | Todo CA-* e cenário [novo] vira teste Vitest. Jornadas no Playwright. O `pnpm verify` passa a incluir `cargo test`. Revisão com `app-review-standards`. | ✅ | ✅ |
+| Fluxo e portões | Todo CA-* e cenário [novo] vira teste Vitest. Jornadas no Playwright: criar, renomear, mover e excluir. A jornada "linkar" (criar um link com autocomplete e segui-lo) não existe nesta feature, que não tem interface de links; ela entra no `e2e/` com a spec 002, e aqui os links são verificados dentro das jornadas de renomear, mover e excluir. O `pnpm verify` passa a incluir `cargo test`. Revisão com `app-review-standards`, com o `scan.mjs` ajustado ao novo local do `<Toaster>`. | ✅ | ✅ |
 
 **Resultado**: nenhum princípio violado. Os dois desvios de regras herdadas estão na seção
 Complexity Tracking.
@@ -118,7 +119,7 @@ specs/001-vault-notas/
 │   └── ui.md            # Telas, composições app-*, mensagens, atalhos
 ├── checklists/
 │   └── requirements.md
-└── tasks.md             # Phase 2 (/speckit-tasks — ainda não criado)
+└── tasks.md             # Phase 2 (/speckit-tasks)
 ```
 
 ### Source Code (repository root)
@@ -140,12 +141,13 @@ dev-notes/
 │   │   ├── vault/                       # explorador, criar, renomear, mover, excluir
 │   │   │   ├── components/              # vault-tree.tsx, vault-tree-item.tsx, vault-move-dialog.tsx
 │   │   │   ├── model/                   # vault.names.ts, vault.operations.ts, vault.deletion.ts
-│   │   │   ├── tests/                   # vault-*.test.ts(x) com CA-NOTA-001/004/006/009/010/011
+│   │   │   ├── tests/                   # vault-*.test.ts(x) com CA-NOTA-001/004/006/009/010/011, vault-performance.test.ts
+│   │   │   │   └── fixtures/            # synthetic-vault.ts (vault sintético de 5.000 notas)
 │   │   │   ├── vault.store.ts           # vault aberto, árvore, status do índice (ADR-006)
 │   │   │   ├── index.ts                 # contrato público (NOM-06)
 │   │   │   └── README.md                # RN-NOTA-001..012 (COD-03)
 │   │   ├── editor/                      # nota aberta, gravação automática, conflito externo
-│   │   │   ├── components/              # note-editor.tsx (CodeMirror em app-editor-frame)
+│   │   │   ├── components/              # note-editor.tsx (CodeMirror em app-editor-frame), note-conflict-dialog.tsx
 │   │   │   ├── model/                   # note.machine.ts (máquina de estados de OpenNote)
 │   │   │   ├── tests/                   # CA-NOTA-007/008 e cenários [novo] da US4
 │   │   │   ├── note.store.ts
@@ -185,11 +187,12 @@ dev-notes/
 │   ├── icons/                           # pnpm tauri icon (quando o SVG do logo existir)
 │   └── src/
 │       ├── main.rs
-│       ├── lib.rs                       # registra plugins e comandos; vault_restore no setup
+│       ├── lib.rs                       # registra plugins, comandos e o VaultState
 │       └── vault.rs                     # vault_pick/restore/scan/read_notes/trash + validação de caminho
 ├── e2e/
 │   └── vault.spec.ts                    # jornadas: criar, renomear com links, excluir, conflito
 ├── public/favicon.svg                   # quando o logo em SVG existir (brand.md 1.2)
+├── scripts/check-build.mjs              # (template) + sem adapter de memória nem recurso de rede no dist/
 ├── docs/                                # arquitetura, regras, brand, standards (adaptado), decisions/
 ├── specs/
 ├── components.json                      # (template) style base-nova
@@ -223,8 +226,9 @@ features/vault nunca importa features/editor
 ```
 
 O `vault.store` avisa o `editor` pelos ganchos `onBeforeMutate` e `onEntryEvent`
-([data-model.md](./data-model.md) "VaultEvent"), que o `note.store` registra ao ser criado. Assim
-não há dependência circular entre as duas features.
+([data-model.md](./data-model.md) "VaultEvent"), que o `note.store` registra ao ser criado. No
+sentido contrário, o explorador recebe `onOpenNote` por prop, e o `app/workspace.tsx` liga essa
+prop ao `note.store`. Assim não há dependência circular entre as duas features.
 
 ## Fases de implementação (visão para `/speckit-tasks`)
 

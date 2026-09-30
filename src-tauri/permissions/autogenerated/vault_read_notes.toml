@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-vault-read-notes"
+description = "Enables the vault_read_notes command without any pre-configured scope."
+commands.allow = ["vault_read_notes"]
+
+[[permission]]
+identifier = "deny-vault-read-notes"
+description = "Denies the vault_read_notes command without any pre-configured scope."
+commands.deny = ["vault_read_notes"]

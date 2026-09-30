@@ -10,7 +10,7 @@
 cenários de aceite". Esta é a spec 001, cobrindo o grupo RN-NOTA-001..012 (feature `vault`).
 
 **Fontes**: `docs/regras-de-negocio.md` v1.1 (§6.1, §7, §8 FL-NOTA-001..003, §9) ·
-`.specify/memory/constitution.md` v1.0.0
+`.specify/memory/constitution.md` v1.0.1
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -166,8 +166,9 @@ revisto.
 
 ### Edge Cases
 
-- **Nome inválido**: renomear ou criar com nome vazio ou com caracteres proibidos pelo sistema
-  operacional é bloqueado com aviso, sem alterar nada.
+- **Nome inválido**: renomear ou criar com nome vazio, com caracteres proibidos pelo sistema
+  operacional ou iniciado por ponto é bloqueado com aviso, sem alterar nada. Nomes iniciados por
+  ponto ficariam ocultos na árvore (FR-002).
 - **Diferença só de maiúsculas**: `API` e `api` na mesma pasta contam como o mesmo nome (evita
   conflito em sistemas que não diferenciam maiúsculas).
 - **Renomear para o mesmo nome**: nenhuma alteração é feita e nenhum aviso é exibido.
@@ -208,8 +209,9 @@ revisto.
   no arquivo automaticamente, e o app MUST indicar quando há edição pendente (ainda não gravada).
   Ao gravar, o app MUST preservar o tipo de quebra de linha (LF ou CRLF) e a presença de BOM do
   arquivo original; só o texto editado pelo usuário muda.
-- **FR-005**: Nomes vazios ou com caracteres proibidos pelo sistema operacional MUST ser
-  bloqueados com aviso.
+- **FR-005**: Nomes vazios, com caracteres proibidos pelo sistema operacional ou iniciados por
+  ponto MUST ser bloqueados com aviso. Um nome iniciado por ponto deixaria a nota ou a pasta
+  oculta (FR-002).
 - **FR-006**: Todas as operações desta spec MUST funcionar sem internet, e as notas MUST
   permanecer legíveis por qualquer outra ferramenta.
 
@@ -222,8 +224,9 @@ revisto.
   passar a ser tratados como link sem destino (quebrado) (RN-NOTA-003). A aparência visual de
   link quebrado no editor é entregue pela spec de links (002); nesta spec, verifica-se o texto
   intacto e o link sem destino.
-- **FR-010**: Excluir uma pasta MUST pedir confirmação informando a quantidade de notas e, se
-  confirmado, enviar a pasta inteira para a lixeira (RN-NOTA-009).
+- **FR-010**: Excluir uma pasta MUST pedir confirmação informando a quantidade de notas e de
+  outros arquivos (tudo o que não é nota, inclusive canvas) e, se confirmado, enviar a pasta
+  inteira para a lixeira (RN-NOTA-009).
 
 **Renomear (RN-NOTA-004, 005, 006; RN-LINK-006)**
 
@@ -304,6 +307,12 @@ revisto.
   segundo) e ao trocar de nota ou fechar o app; "edição pendente" é o intervalo até essa gravação.
 - **Editor básico**: esta spec cobre só abrir, editar e gravar texto. Destaque de código,
   autocomplete de links e demais recursos do editor ficam em specs próprias.
+- **Medição de desempenho**: as metas SC-002, SC-004 e SC-006 são medidas num computador de
+  desenvolvimento comum (SSD e pelo menos 8 GB de memória), registrado junto com os números. A
+  SC-006 conta do início do `open` do vault até a árvore aparecer, sem incluir o índice de links,
+  que é montado depois. A SC-002 conta da confirmação do novo nome até o aviso de conclusão, com
+  o índice já pronto. A SC-004 conta da gravação feita pela outra ferramenta até o conteúdo novo
+  aparecer no editor.
 - **Nome padrão**: nota nova recebe um nome padrão ("Sem título", com número se já existir) e pode
   ser renomeada em seguida.
 - **Comparação de nomes**: maiúsculas e minúsculas são tratadas como iguais para detectar conflito.

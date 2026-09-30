@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-vault-app-data-write"
+description = "Enables the vault_app_data_write command without any pre-configured scope."
+commands.allow = ["vault_app_data_write"]
+
+[[permission]]
+identifier = "deny-vault-app-data-write"
+description = "Denies the vault_app_data_write command without any pre-configured scope."
+commands.deny = ["vault_app_data_write"]

@@ -1,0 +1,139 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!**/pnpm-lock.yaml",
+      "!**/.claude/settings.local.json",
+      "!**/src-tauri/target",
+      "!**/src-tauri/gen"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 80
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["@/features/*/**"],
+                "message": "Import features through their public index.ts."
+              },
+              {
+                "group": ["@/mocks/**", "**/mocks/**"],
+                "message": "Mocks belong to development and tests only."
+              },
+              {
+                "group": ["@tauri-apps/**"],
+                "message": "OS access goes through @/shared/vault (constitution, principle III)."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/shared/components/ui/**"],
+      "linter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["src/shared/vault/adapters/tauri/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/features/*/**"],
+                    "message": "Import features through their public index.ts."
+                  },
+                  {
+                    "group": ["@/mocks/**", "**/mocks/**"],
+                    "message": "Mocks belong to development and tests only."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/shared/vault/index.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/features/*/**"],
+                    "message": "Import features through their public index.ts."
+                  },
+                  {
+                    "group": ["@tauri-apps/**"],
+                    "message": "OS access goes through @/shared/vault (constitution, principle III)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "e2e/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/features/*/**"],
+                    "message": "Import features through their public index.ts."
+                  },
+                  {
+                    "group": ["@tauri-apps/**"],
+                    "message": "OS access goes through @/shared/vault (constitution, principle III)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

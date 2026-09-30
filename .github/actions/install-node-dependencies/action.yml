@@ -1,0 +1,30 @@
+name: Install Node dependencies
+description: Prepara pnpm e Node e instala as dependências do lockfile.
+
+inputs:
+  node-version:
+    description: >-
+      Versão do Node. Vazio usa o `.node-version` do repositório, que é a
+      versão em que o projeto roda de verdade.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        # `node-version` vence quando vem preenchido; senão vale o arquivo.
+        node-version: ${{ inputs.node-version }}
+        node-version-file: .node-version
+        cache: pnpm
+
+    # `engine-strict=false` existe para o teste de compatibilidade com a
+    # próxima versão do Node: o `engines` do pacote fixa a faixa atual de
+    # propósito e não deve impedir a instalação quando o objetivo é justamente
+    # rodar fora dela. Nos demais jobs o Node vem do `.node-version`, então a
+    # faixa não é violada e o parâmetro não muda nada.
+    - shell: bash
+      run: pnpm install --frozen-lockfile --config.engine-strict=false
